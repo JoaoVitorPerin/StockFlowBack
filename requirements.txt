@@ -1,0 +1,22 @@
+# Python
+setuptools
+
+# Django
+asgiref
+sqlparse
+typing_extensions
+tzdata
+Django
+
+# Django Rest Framework
+pytz
+djangorestframework
+
+# Django Rest Framework Simple JWT
+pyjwt
+djangorestframework-simplejwt
+
+# Django Cors Headers
+django-cors-headers
+
+psycopg2
