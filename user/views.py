@@ -1,6 +1,8 @@
 from rest_framework.views import APIView
 from django.http import JsonResponse
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from StockFlowBack.serializers import MyTokenObtainPairSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
 import service.user.user
 
 class UserCadastoView(APIView):
@@ -25,3 +27,6 @@ class UserCadastoView(APIView):
                                                                                                               email=email)
 
         return JsonResponse({'status': status, 'descricao':mensagem})
+
+class MyTokenObtainPairView(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer
