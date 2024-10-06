@@ -6,27 +6,24 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 import service.user.user
 
 class UserCadastoView(APIView):
-    def get_permissions(self):
-        """
-        Instancia e retorna a lista de permissões que essa view requer.
-        """
-        if self.request.method == 'POST':
-            permission_classes = [AllowAny]
-        else:
-            permission_classes = [IsAuthenticated]
-        return [permission() for permission in permission_classes]
     def post(self, *args, **kwargs):
         username = self.request.data.get('username')
-        password = self.request.data.get('password')
-        nome = self.request.data.get('nome')
-        sobrenome = self.request.data.get('sobrenome')
+        password = 'Stockflow@2024'
+        nome = self.request.data.get('first_name')
+        sobrenome = self.request.data.get('last_name')
         email = self.request.data.get('email')
 
-        status, mensagem = service.user.user.Usuario(username=username, password=password).cadastrar_usuario(nome=nome,
+        status, mensagem, user_id = service.user.user.Usuario(username=username, password=password).cadastrar_usuario(nome=nome,
                                                                                                               sobrenome=sobrenome,
                                                                                                               email=email)
 
-        return JsonResponse({'status': status, 'descricao':mensagem})
+        return JsonResponse({'status': status, 'descricao':mensagem, 'user_id': user_id})
+
+class GestaoUsuarioView(APIView):
+    def get(self, *args, **kwargs):
+        user_id = self.request.GET.get('user_id')
+        status, mensagem, usuarios = service.user.user.Usuario().listar_usuarios(user_id=user_id)
+        return JsonResponse({'status': status, 'mensagem': mensagem, 'usuario': usuarios})
 
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
