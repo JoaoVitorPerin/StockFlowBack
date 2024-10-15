@@ -4,8 +4,10 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from StockFlowBack.serializers import MyTokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 import service.user.user
+import service.email.email
 from dotenv import load_dotenv
 import os
+import random
 
 load_dotenv()
 
@@ -38,6 +40,19 @@ class UserCadastoView(APIView):
         status, mensagem, user_id = service.user.user.Usuario().deletar_usuario(user_id=user_id)
 
         return JsonResponse({'status': status, 'descricao': mensagem, 'user_id': user_id})
+
+
+class UserPasswordResetView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, *args, **kwargs):
+        email = self.request.data.get('email')
+        codigo = random.randint(100000, 999999)
+
+        status, mensagem = service.email.email.Email.enviar_email_recuperacao(destinatario=email, codigo=codigo)
+
+        return JsonResponse({'status': status, 'mensagem': mensagem})
+
 
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
