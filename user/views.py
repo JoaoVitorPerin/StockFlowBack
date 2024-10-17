@@ -74,8 +74,8 @@ class ResetSenhaUser(APIView):
         return [permission() for permission in permission_classes]
     def post(self, *args, **kwargs):
         email = self.request.data.get('email')
-        codigo = self.request.data.get('codigo')
-        senha = self.request.data.get('senha')
+        codigo = int(self.request.data.get('codigo'))
+        senha = self.request.data.get('password')
 
         status, mensagem = service.user.user.UsuarioSistema().resetar_senha(email=email, codigo=codigo, senha=senha)
 
