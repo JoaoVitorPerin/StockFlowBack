@@ -12,9 +12,18 @@ import random
 load_dotenv()
 
 class UserCadastoView(APIView):
+    def get_permissions(self):
+        """
+        Instancia e retorna a lista de permissões que essa view requer.
+        """
+        if self.request.method == 'POST':
+            permission_classes = [AllowAny]
+        else:
+            permission_classes = [IsAuthenticated]
+        return [permission() for permission in permission_classes]
     def get(self, *args, **kwargs):
         user_id = self.request.GET.get('user_id')
-        status, mensagem, usuarios = service.user.user.Usuario().listar_usuarios(user_id=user_id)
+        status, mensagem, usuarios = service.user.user.UsuarioSistema().listar_usuarios(user_id=user_id)
 
         return JsonResponse({'status': status, 'mensagem': mensagem, 'usuario': usuarios})
 
@@ -26,7 +35,7 @@ class UserCadastoView(APIView):
         sobrenome = self.request.data.get('last_name')
         email = self.request.data.get('email')
 
-        status, mensagem, user_id = service.user.user.Usuario(username=username, password=password).cadastrar_usuario(user_id=user_id,
+        status, mensagem, user_id = service.user.user.UsuarioSistema(username=username, password=password).cadastrar_usuario(user_id=user_id,
                                                                                                                       username=username,
                                                                                                                       nome=nome,
                                                                                                                       sobrenome=sobrenome,
@@ -37,7 +46,7 @@ class UserCadastoView(APIView):
     def delete(self, *args, **kwargs):
         user_id = self.request.GET.get('user_id')
 
-        status, mensagem, user_id = service.user.user.Usuario().deletar_usuario(user_id=user_id)
+        status, mensagem, user_id = service.user.user.UsuarioSistema().deletar_usuario(user_id=user_id)
 
         return JsonResponse({'status': status, 'descricao': mensagem, 'user_id': user_id})
 
@@ -53,6 +62,24 @@ class UserPasswordResetView(APIView):
 
         return JsonResponse({'status': status, 'mensagem': mensagem})
 
+class ResetSenhaUser(APIView):
+    def get_permissions(self):
+        """
+        Instancia e retorna a lista de permissões que essa view requer.
+        """
+        if self.request.method == 'POST':
+            permission_classes = [AllowAny]
+        else:
+            permission_classes = [IsAuthenticated]
+        return [permission() for permission in permission_classes]
+    def post(self, *args, **kwargs):
+        email = self.request.data.get('email')
+        codigo = self.request.data.get('codigo')
+        senha = self.request.data.get('senha')
+
+        status, mensagem = service.user.user.UsuarioSistema().resetar_senha(email=email, codigo=codigo, senha=senha)
+
+        return JsonResponse({'status': status, 'mensagem': mensagem})
 
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
