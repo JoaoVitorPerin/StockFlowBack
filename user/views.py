@@ -34,12 +34,14 @@ class UserCadastoView(APIView):
         nome = self.request.data.get('first_name')
         sobrenome = self.request.data.get('last_name')
         email = self.request.data.get('email')
+        grupo_id = self.request.data.get('grupo_id')
 
         status, mensagem, user_id = service.user.user.UsuarioSistema(username=username, password=password).cadastrar_usuario(user_id=user_id,
                                                                                                                       username=username,
                                                                                                                       nome=nome,
                                                                                                                       sobrenome=sobrenome,
-                                                                                                                      email=email)
+                                                                                                                      email=email,
+                                                                                                                      grupo_id=grupo_id)
 
         return JsonResponse({'status': status, 'descricao':mensagem, 'user_id': user_id})
 
@@ -80,6 +82,22 @@ class ResetSenhaUser(APIView):
         status, mensagem = service.user.user.UsuarioSistema().resetar_senha(email=email, codigo=codigo, senha=senha)
 
         return JsonResponse({'status': status, 'mensagem': mensagem})
+
+class GruposSistemaView(APIView):
+    def get_permissions(self):
+        """
+        Instancia e retorna a lista de permissões que essa view requer.
+        """
+        if self.request.method == 'GET':
+            permission_classes = [AllowAny]
+        else:
+            permission_classes = [IsAuthenticated]
+        return [permission() for permission in permission_classes]
+
+    def get(self, *args, **kwargs):
+        status, mensagem, grupos = service.user.user.UsuarioSistema().buscar_todos_os_grupos()
+        return JsonResponse({'status': status, 'mensagem': mensagem, 'grupos': grupos})
+
 
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
