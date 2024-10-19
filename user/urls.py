@@ -1,4 +1,4 @@
-from django.urls import re_path, include
+from django.urls import re_path
 from user.views import UserCadastoView, MyTokenObtainPairView, UserPasswordResetView, ResetSenhaUser, GruposSistemaView
 
 urlpatterns = [

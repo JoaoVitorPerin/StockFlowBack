@@ -8,25 +8,19 @@ import service.email.email
 from dotenv import load_dotenv
 import os
 import random
-
+from StockFlowBack.decorators import group_required
+from django.utils.decorators import method_decorator
 load_dotenv()
 
 class UserCadastoView(APIView):
-    def get_permissions(self):
-        """
-        Instancia e retorna a lista de permissões que essa view requer.
-        """
-        if self.request.method == 'POST':
-            permission_classes = [AllowAny]
-        else:
-            permission_classes = [IsAuthenticated]
-        return [permission() for permission in permission_classes]
+    @method_decorator(group_required('Administrador'))
     def get(self, *args, **kwargs):
         user_id = self.request.GET.get('user_id')
         status, mensagem, usuarios = service.user.user.UsuarioSistema().listar_usuarios(user_id=user_id)
 
         return JsonResponse({'status': status, 'mensagem': mensagem, 'usuario': usuarios})
 
+    @method_decorator(group_required('Administrador'))
     def post(self, *args, **kwargs):
         user_id = self.request.data.get('user_id')
         username = self.request.data.get('username')
@@ -45,6 +39,7 @@ class UserCadastoView(APIView):
 
         return JsonResponse({'status': status, 'descricao':mensagem, 'user_id': user_id})
 
+    @method_decorator(group_required('Administrador'))
     def delete(self, *args, **kwargs):
         user_id = self.request.GET.get('user_id')
 
@@ -54,7 +49,15 @@ class UserCadastoView(APIView):
 
 
 class UserPasswordResetView(APIView):
-    permission_classes = [AllowAny]
+    def get_permissions(self):
+        """
+        Instancia e retorna a lista de permissões que essa view requer.
+        """
+        if self.request.method == 'POST':
+            permission_classes = [AllowAny]
+        else:
+            permission_classes = [IsAuthenticated]
+        return [permission() for permission in permission_classes]
 
     def post(self, *args, **kwargs):
         email = self.request.data.get('email')
@@ -84,16 +87,7 @@ class ResetSenhaUser(APIView):
         return JsonResponse({'status': status, 'mensagem': mensagem})
 
 class GruposSistemaView(APIView):
-    def get_permissions(self):
-        """
-        Instancia e retorna a lista de permissões que essa view requer.
-        """
-        if self.request.method == 'GET':
-            permission_classes = [AllowAny]
-        else:
-            permission_classes = [IsAuthenticated]
-        return [permission() for permission in permission_classes]
-
+    @method_decorator(group_required('Administrador'))
     def get(self, *args, **kwargs):
         status, mensagem, grupos = service.user.user.UsuarioSistema().buscar_todos_os_grupos()
         return JsonResponse({'status': status, 'mensagem': mensagem, 'grupos': grupos})
