@@ -46,7 +46,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'django_extensions',
     'corsheaders',
-    'user'
+    'user',
+    'produto'
 ]
 
 MIDDLEWARE = [
