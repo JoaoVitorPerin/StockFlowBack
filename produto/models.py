@@ -10,3 +10,25 @@ class Produto(models.Model):
     status = models.BooleanField(default=True)
     def __str__(self):
         return self.nome
+
+class Estoque(models.Model):
+    produto = models.OneToOneField(Produto, on_delete=models.CASCADE)
+    quantidade = models.IntegerField(null=True)
+    data_ultima_movimentacao = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f'Estoque de {self.produto.nome}'
+
+class MovimentacaoEstoque(models.Model):
+    TIPOS_MOVIMENTACAO = [
+        ('entrada', 'Entrada'),
+        ('saida', 'Saída'),
+    ]
+
+    produto = models.ForeignKey(Produto, on_delete=models.CASCADE, null=True)
+    tipo = models.CharField(max_length=10, choices=TIPOS_MOVIMENTACAO, null=True)
+    quantidade = models.IntegerField(null=True)
+    data_movimentacao = models.DateTimeField(null=True)
+
+    def __str__(self):
+        return f'{self.tipo.capitalize()} - {self.produto.nome} - {self.data_movimentacao}'
