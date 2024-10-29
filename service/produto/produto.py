@@ -145,12 +145,36 @@ class ProdutoSistema():
 
     def buscar_movimentacao_estoque(self, produto_id=None):
         try:
-            # Caso contrário, busca todas as movimentações
-            movimentacoes = MovimentacaoEstoque.objects.all().values(
-                'id', 'produto__nome', 'tipo', 'quantidade', 'data_movimentacao'
+            # Filtro por produto_id, se fornecido
+            movimentacoes_query = MovimentacaoEstoque.objects.all()
+
+            if produto_id:
+                movimentacoes_query = movimentacoes_query.filter(produto_id=produto_id)
+
+            # Busca todas as movimentações com os detalhes do usuário
+            movimentacoes = movimentacoes_query.values(
+                'id',
+                'produto__nome',
+                'tipo',
+                'quantidade',
+                'data_movimentacao',
+                'usuario__first_name',
+                'usuario__last_name'
             ).order_by('-data_movimentacao')
 
-            return True, 'Movimentações de estoque retornadas com sucesso', list(movimentacoes)
+            # Converte a queryset em uma lista de dicionários e adiciona o campo "user"
+            movimentacoes_formatadas = [
+                {
+                    'id': mov['id'],
+                    'produto__nome': mov['produto__nome'],
+                    'tipo': mov['tipo'],
+                    'quantidade': mov['quantidade'],
+                    'data_movimentacao': mov['data_movimentacao'],
+                    'user': f"{mov['usuario__first_name']} {mov['usuario__last_name']}".strip()
+                }
+                for mov in movimentacoes
+            ]
+
+            return True, 'Movimentações de estoque retornadas com sucesso', movimentacoes_formatadas
         except Exception as e:
             return False, str(e), []
-
