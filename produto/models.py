@@ -1,4 +1,5 @@
 from django.db import models
+from user.models import Usuario
 
 class Produto(models.Model):
     nome = models.CharField(max_length=255)
@@ -15,6 +16,7 @@ class Estoque(models.Model):
     produto = models.OneToOneField(Produto, on_delete=models.CASCADE)
     quantidade = models.IntegerField(null=True)
     data_ultima_movimentacao = models.DateTimeField(null=True, blank=True)
+    usuario = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return f'Estoque de {self.produto.nome}'
@@ -29,6 +31,7 @@ class MovimentacaoEstoque(models.Model):
     tipo = models.CharField(max_length=10, choices=TIPOS_MOVIMENTACAO, null=True)
     quantidade = models.IntegerField(null=True)
     data_movimentacao = models.DateTimeField(null=True)
+    usuario = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True)
 
     def __str__(self):
         return f'{self.tipo.capitalize()} - {self.produto.nome} - {self.data_movimentacao}'

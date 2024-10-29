@@ -42,24 +42,21 @@ class ProdutoCadastoView(APIView):
         return JsonResponse({'status': status, 'descricao': mensagem, 'produto_id': produto_id})
 
 class ProdutoEstoqueView(APIView):
-    def get_permissions(self):
-        """
-        Instancia e retorna a lista de permissões que essa view requer.
-        """
-        if self.request.method == 'GET':
-            permission_classes = [AllowAny]
-        else:
-            permission_classes = [IsAuthenticated]
-        return [permission() for permission in permission_classes]
+    @method_decorator(group_required('Administrador', 'Operador de Estoque'))
     def get(self, *args, **kwargs):
         status, mensagem, lista = service.produto.produto.ProdutoSistema().buscar_movimentacao_estoque()
         return JsonResponse({'status': status, 'descricao': mensagem, 'movimentacao': lista})
+
+
+    @method_decorator(group_required('Administrador', 'Operador de Estoque'))
     def post(self, *args, **kwargs):
         produto_id = self.request.data.get('produto_id')
         quantidade = self.request.data.get('quantidade')
         movimentacao = self.request.data.get('movimentacao')
+        usuario_id = self.request.data.get('usuario_id')
 
         status, mensagem, produto_id = service.produto.produto.ProdutoSistema().alterar_estoque(produto_id=produto_id,
                                                                                                 quantidade=quantidade,
-                                                                                                movimentacao=movimentacao)
+                                                                                                movimentacao=movimentacao,
+                                                                                                usuario_id=usuario_id)
         return JsonResponse({'status': status, 'descricao': mensagem, 'produto_id': produto_id})
