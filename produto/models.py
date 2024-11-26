@@ -35,3 +35,7 @@ class MovimentacaoEstoque(models.Model):
 
     def __str__(self):
         return f'{self.tipo.capitalize()} - {self.produto.nome} - {self.data_movimentacao}'
+
+
+class Cliente:
+    pass
