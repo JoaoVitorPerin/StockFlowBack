@@ -16,19 +16,18 @@ class ClienteCadastoView(APIView):
     @method_decorator(group_required('Administrador', 'Operador de Estoque'))
     def post(self, *args, **kwargs):
         cliente_id = self.request.data.get('cliente_id')
-
         nome_completo = self.request.data.get('nome_completo')
         cpf_cnpj = self.request.data.get('cpf_cnpj')
         telefone = self.request.data.get('telefone')
         email = self.request.data.get('email')
-        rua = self.request.data.get('rua')
+        rua = self.request.data.get('logradouro')
         numero = self.request.data.get('numero')
         complemento = self.request.data.get('complemento')
         bairro = self.request.data.get('bairro')
-        cidade = self.request.data.get('cidade')
-        estado = self.request.data.get('estado')
+        cidade = self.request.data.get('localidade')
+        estado = self.request.data.get('uf')
         cep = self.request.data.get('cep')
-        indicacao = self.request.data.get('indicacao')
+        indicacao = self.request.data.get('cliente_indicador')
         is_atleta = self.request.data.get('is_atleta')
 
         status, mensagem, cliente_id = service.cliente.cliente.ClienteSistema().cadastrar_cliente(cliente_id=cliente_id,

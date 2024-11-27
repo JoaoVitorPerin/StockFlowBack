@@ -5,33 +5,37 @@ from cliente.models import Cliente
 class ClienteSistema():
     def listar_clientes(self, cliente_id=None):
         try:
+            # Subquery para buscar a última indicação
             ultima_indicacao = Cliente.objects.filter(
-                indicados=OuterRef('id')
+                indicados=OuterRef('id')  # Supondo que 'indicados' é o campo de referência
             ).order_by('-id')
 
             ultima_indicacao_nome = Subquery(ultima_indicacao.values('nome_completo')[:1])
             ultima_indicacao_cpf_cnpj = Subquery(ultima_indicacao.values('cpf_cnpj')[:1])
+            cliente_indicador_id = Subquery(ultima_indicacao.values('id')[:1])  # Novo nome para evitar conflitos
 
             if cliente_id:
                 cliente = Cliente.objects.filter(id=cliente_id).annotate(
                     ultima_indicacao_nome=Coalesce(ultima_indicacao_nome, Value(None)),
-                    ultima_indicacao_cpf_cnpj=Coalesce(ultima_indicacao_cpf_cnpj, Value(None))
+                    ultima_indicacao_cpf_cnpj=Coalesce(ultima_indicacao_cpf_cnpj, Value(None)),
+                    cliente_indicador=Coalesce(cliente_indicador_id, Value(None))  # Usa um nome diferente
                 ).values(
                     'id', 'nome_completo', 'cpf_cnpj', 'telefone', 'email',
                     'rua', 'numero', 'complemento', 'bairro', 'cidade', 'estado', 'cep',
-                    'is_atleta', 'ultima_indicacao_nome', 'ultima_indicacao_cpf_cnpj'
+                    'is_atleta', 'ultima_indicacao_nome', 'ultima_indicacao_cpf_cnpj', 'status', 'cliente_indicador'
                 ).first()
                 lista_clientes = cliente
             else:
                 lista_clientes = list(
                     Cliente.objects.all().annotate(
                         ultima_indicacao_nome=Coalesce(ultima_indicacao_nome, Value(None)),
-                        ultima_indicacao_cpf_cnpj=Coalesce(ultima_indicacao_cpf_cnpj, Value(None))
+                        ultima_indicacao_cpf_cnpj=Coalesce(ultima_indicacao_cpf_cnpj, Value(None)),
+                        cliente_indicador=Coalesce(cliente_indicador_id, Value(None))  # Usa um nome diferente
                     ).values(
                         'id', 'nome_completo', 'cpf_cnpj', 'telefone', 'email',
                         'rua', 'numero', 'complemento', 'bairro', 'cidade', 'estado', 'cep',
-                        'is_atleta', 'ultima_indicacao_nome', 'ultima_indicacao_cpf_cnpj'
-                    )
+                        'is_atleta', 'ultima_indicacao_nome', 'ultima_indicacao_cpf_cnpj', 'status', 'cliente_indicador'
+                    ).order_by('id')
                 )
 
             return True, 'Clientes retornados com sucesso', lista_clientes

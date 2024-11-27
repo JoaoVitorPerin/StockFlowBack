@@ -5,7 +5,7 @@ class Cliente(models.Model):
     # Campos principais
     nome_completo = models.CharField(max_length=255)
     cpf_cnpj = models.CharField(max_length=18, unique=True)
-    telefone = models.CharField(max_length=15, null=True, blank=True)
+    telefone = models.CharField(max_length=30, null=True, blank=True)
     email = models.EmailField(max_length=255, unique=True)
 
     # Endereço
