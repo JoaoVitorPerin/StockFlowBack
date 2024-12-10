@@ -3,8 +3,11 @@ from produto.models import Estoque
 from django.db.models import OuterRef, Subquery
 from django.db.models.functions import Coalesce
 from django.db import models
+from django.forms.models import model_to_dict
 
 class PedidoSistema():
+    from django.forms.models import model_to_dict
+
     def listar_pedidos(self, pedido_id=None):
         try:
             if pedido_id:
@@ -12,76 +15,60 @@ class PedidoSistema():
                 if not pedido_existe:
                     return False, f"Pedido com ID {pedido_id} não encontrado!", None
 
-                # Busca o pedido com os dados gerais
-                pedido = Pedido.objects.filter(idPedido=pedido_id).select_related('cliente',
-                                                                                  'cliente').values(
-                    'idPedido', 'dataPedido', 'vlrTotal', 'desconto',
-                    'cliente__nome_completo', 'cliente__cpf_cnpj', 'cliente__email',
-                    'cliente__rua', 'cliente__numero', 'cliente__complemento',
-                    'cliente__bairro', 'cliente__cidade', 'cliente__estado',
-                    'cliente__cep'
-                ).first()
+                # Busca o pedido com todos os campos
+                pedido_obj = Pedido.objects.select_related('cliente').get(idPedido=pedido_id)
+                pedido = model_to_dict(pedido_obj)
 
                 # Organizar os dados do cliente em uma chave separada
-                cliente = {
-                    "nome_completo": pedido.pop('cliente__nome_completo'),
-                    "cpf_cnpj": pedido.pop('cliente__cpf_cnpj'),
-                    "email": pedido.pop('cliente__email'),
-                    "endereco": {
-                        "rua": pedido.pop('cliente__rua'),
-                        "numero": pedido.pop('cliente__numero'),
-                        "complemento": pedido.pop('cliente__complemento'),
-                        "bairro": pedido.pop('cliente__bairro'),
-                        "cidade": pedido.pop('cliente__cidade'),
-                        "estado": pedido.pop('cliente__estado'),
-                        "cep": pedido.pop('cliente__cep'),
-                    }
+                cliente = model_to_dict(pedido_obj.cliente)
+                cliente['endereco'] = {
+                    "logradouro": pedido_obj.logradouro,  # Dados diretamente do modelo Pedido
+                    "numero": pedido_obj.numero,
+                    "complemento": pedido_obj.complemento,
+                    "bairro": pedido_obj.bairro,
+                    "cidade": pedido_obj.localidade,
+                    "estado": pedido_obj.uf,
+                    "cep": pedido_obj.cep,
                 }
 
                 pedido['cliente'] = cliente
 
                 # Busca os produtos relacionados ao pedido
-                itens = ItemPedido.objects.filter(pedido_id=pedido_id).values(
-                    'produto_id', 'produto__nome', 'quantidade', 'precoUnitario', 'produto__categoria', 'produto__descricao'
+                itens = ItemPedido.objects.filter(pedido_id=pedido_id).select_related('produto').values(
+                    'produto_id', 'produto__nome', 'quantidade', 'precoUnitario',
+                    'produto__categoria', 'produto__descricao'
                 )
 
                 # Adiciona os produtos ao resultado do pedido
                 pedido['produtos'] = list(itens)
                 lista_pedido = pedido
             else:
-                lista_pedido = list(
-                    Pedido.objects.all().select_related('cliente', 'cliente').values(
-                        'idPedido', 'dataPedido', 'vlrTotal', 'desconto',
-                        'cliente__nome_completo', 'cliente__cpf_cnpj', 'cliente__email',
-                        'cliente__rua', 'cliente__numero', 'cliente__complemento',
-                        'cliente__bairro', 'cliente__cidade', 'cliente__estado',
-                        'cliente__cep'
-                    )
-                )
+                pedidos = Pedido.objects.select_related('cliente').all()
+                lista_pedido = []
 
-                # Organizar os dados do cliente e adicionar produtos para cada pedido
-                for pedido in lista_pedido:
-                    cliente = {
-                        "nome_completo": pedido.pop('cliente__nome_completo'),
-                        "cpf_cnpj": pedido.pop('cliente__cpf_cnpj'),
-                        "email": pedido.pop('cliente__email'),
-                        "endereco": {
-                            "rua": pedido.pop('cliente__rua'),
-                            "numero": pedido.pop('cliente__numero'),
-                            "complemento": pedido.pop('cliente__complemento'),
-                            "bairro": pedido.pop('cliente__bairro'),
-                            "cidade": pedido.pop('cliente__cidade'),
-                            "estado": pedido.pop('cliente__estado'),
-                            "cep": pedido.pop('cliente__cep'),
-                        }
+                for pedido_obj in pedidos:
+                    pedido = model_to_dict(pedido_obj)
+
+                    cliente = model_to_dict(pedido_obj.cliente)
+                    cliente['endereco'] = {
+                        "logradouro": pedido_obj.logradouro,  # Dados diretamente do modelo Pedido
+                        "numero": pedido_obj.numero,
+                        "complemento": pedido_obj.complemento,
+                        "bairro": pedido_obj.bairro,
+                        "cidade": pedido_obj.localidade,
+                        "estado": pedido_obj.uf,
+                        "cep": pedido_obj.cep,
                     }
 
                     pedido['cliente'] = cliente
 
-                    itens = ItemPedido.objects.filter(pedido_id=pedido['idPedido']).values(
-                        'produto_id', 'produto__nome', 'quantidade', 'precoUnitario', 'produto__categoria', 'produto__descricao'
+                    itens = ItemPedido.objects.filter(pedido_id=pedido['idPedido']).select_related('produto').values(
+                        'produto_id', 'produto__nome', 'quantidade', 'precoUnitario',
+                        'produto__categoria', 'produto__descricao'
                     )
+
                     pedido['produtos'] = list(itens)
+                    lista_pedido.append(pedido)
 
             return True, 'Pedidos retornados com sucesso', lista_pedido
         except Exception as e:
