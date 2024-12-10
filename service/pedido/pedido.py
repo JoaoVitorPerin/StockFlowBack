@@ -87,7 +87,9 @@ class PedidoSistema():
         except Exception as e:
             return False, str(e), []
 
-    def cadastrar_pedido(self, pedido_id=None, data_pedido=None, cliente_id=None, itens=None, desconto=0.0):
+    def cadastrar_pedido(self, pedido_id=None, data_pedido=None, cliente_id=None, itens=None, desconto=0.0, frete=0.0,
+                         logradouro=None, numero=None, complemento=None, bairro=None, localidade=None, uf=None, vlr_total=None,
+                         cep=None):
         try:
             # Valida e ajusta o estoque para todos os itens
             for item in itens:
@@ -116,6 +118,18 @@ class PedidoSistema():
                 pedido.dataPedido = data_pedido
                 pedido.cliente_id = cliente_id
                 pedido.desconto = desconto
+                pedido.frete = frete
+                pedido.vlrTotal = vlr_total
+
+                # Atualiza os campos de endereço
+                pedido.logradouro = logradouro
+                pedido.numero = numero
+                pedido.complemento = complemento
+                pedido.bairro = bairro
+                pedido.localidade = localidade
+                pedido.uf = uf
+                pedido.cep = cep
+
                 pedido.save()
 
                 # Remove os itens antigos e ajusta o estoque
@@ -149,7 +163,15 @@ class PedidoSistema():
                     dataPedido=data_pedido,
                     cliente_id=cliente_id,
                     desconto=desconto,
-                    vlrTotal=0  # O valor total será calculado abaixo
+                    frete=frete,
+                    vlrTotal=vlr_total,
+                    logradouro=logradouro,
+                    numero=numero,
+                    complemento=complemento,
+                    bairro=bairro,
+                    localidade=localidade,
+                    uf=uf,
+                    cep=cep
                 )
                 novo_pedido.save()
 
@@ -159,8 +181,6 @@ class PedidoSistema():
                     quantidade = item['quantidade']
                     preco_unitario = item['preco_unitario']
 
-                    vlr_total += quantidade * preco_unitario
-
                     ItemPedido.objects.create(
                         pedido=novo_pedido,
                         produto_id=produto_id,
@@ -168,7 +188,6 @@ class PedidoSistema():
                         precoUnitario=preco_unitario
                     )
 
-                novo_pedido.vlrTotal = vlr_total - desconto
                 novo_pedido.save()
 
                 return True, 'Pedido cadastrado com sucesso!', novo_pedido.idPedido

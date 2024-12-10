@@ -1,6 +1,6 @@
 from django.http import JsonResponse
 from rest_framework.views import APIView
-
+from datetime import datetime
 import service.pedido.pedido
 from StockFlowBack.decorators import group_required
 from django.utils.decorators import method_decorator
@@ -16,21 +16,42 @@ class PedidoCadastroView(APIView):
 
     @method_decorator(group_required('Administrador', 'Operador de Estoque'))
     def post(self, *args, **kwargs):
-        pedido_id = self.request.data.get('pedido_id')
-        data_pedido = self.request.data.get('data_pedido')
-        cliente_id = self.request.data.get('cliente_id')
-        itens = self.request.data.get('itens')
-        desconto = self.request.data.get('desconto', 0.0)
+        data = self.request.data
+        pedido_id = data.get('pedido_id')
+        data_pedido = datetime.now()
+        cliente_id = data.get('cliente_id')
+        itens = data.get('itens')
+        desconto = data.get('desconto', 0.0)
+        frete = data.get('frete', 0.0)
+        vlr_total = data.get('total', 0.0)
+
+        # Novos campos de endereço
+        logradouro = data.get('logradouro')
+        numero = data.get('numero')
+        complemento = data.get('complemento')
+        bairro = data.get('bairro')
+        localidade = data.get('localidade')
+        uf = data.get('uf')
+        cep = data.get('cep')
 
         status, mensagem, pedido_id = service.pedido.pedido.PedidoSistema().cadastrar_pedido(
             pedido_id=pedido_id,
             data_pedido=data_pedido,
             cliente_id=cliente_id,
             itens=itens,
-            desconto=desconto
+            desconto=desconto,
+            frete=frete,
+            logradouro=logradouro,
+            numero=numero,
+            complemento=complemento,
+            bairro=bairro,
+            localidade=localidade,
+            uf=uf,
+            cep=cep,
+            vlr_total = vlr_total
         )
 
-        return JsonResponse({'status': status, 'descricao':mensagem, 'pedido_id': pedido_id})
+        return JsonResponse({'status': status, 'descricao': mensagem, 'pedido_id': pedido_id})
 
     @method_decorator(group_required('Administrador', 'Operador de Estoque'))
     def delete(self, *args, **kwargs):
