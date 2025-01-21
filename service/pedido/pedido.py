@@ -36,7 +36,7 @@ class PedidoSistema():
                 # Busca os produtos relacionados ao pedido
                 itens = ItemPedido.objects.filter(pedido_id=pedido_id).select_related('produto').values(
                     'produto_id', 'produto__nome', 'quantidade', 'precoUnitario',
-                    'produto__categoria', 'produto__descricao'
+                    'produto__categoria', 'produto__descricao', 'is_estoque_externo'
                 )
 
                 # Adiciona os produtos ao resultado do pedido
@@ -64,7 +64,7 @@ class PedidoSistema():
 
                     itens = ItemPedido.objects.filter(pedido_id=pedido['idPedido']).select_related('produto').values(
                         'produto_id', 'produto__nome', 'quantidade', 'precoUnitario',
-                        'produto__categoria', 'produto__descricao'
+                        'produto__categoria', 'produto__descricao', 'is_estoque_externo'
                     )
 
                     pedido['produtos'] = list(itens)
@@ -82,6 +82,10 @@ class PedidoSistema():
             for item in itens:
                 produto_id = item['produto_id']
                 quantidade_solicitada = item['quantidade']
+                is_estoque_externo = item['is_estoque_externo']
+
+                if is_estoque_externo:
+                    continue
 
                 # Busca a quantidade disponível no estoque
                 estoque = Estoque.objects.filter(produto_id=produto_id).first()
@@ -95,7 +99,7 @@ class PedidoSistema():
                 estoque.quantidade -= quantidade_solicitada
                 estoque.save()
 
-            # Se é atualização de pedido
+            # Dentro do bloco "Se é atualização de pedido"
             if pedido_id:
                 pedido = Pedido.objects.filter(idPedido=pedido_id).first()
                 if not pedido:
@@ -119,27 +123,33 @@ class PedidoSistema():
 
                 pedido.save()
 
-                # Remove os itens antigos e ajusta o estoque
+                # Ajusta o estoque para os itens antigos antes de apagar
                 itens_antigos = ItemPedido.objects.filter(pedido_id=pedido_id)
                 for item_antigo in itens_antigos:
-                    # Repor ao estoque a quantidade dos itens antigos
-                    estoque = Estoque.objects.get(produto_id=item_antigo.produto_id)
-                    estoque.quantidade += item_antigo.quantidade
-                    estoque.save()
+                    # Repor ao estoque a quantidade dos itens antigos, caso não fossem de estoque externo
+                    if not item_antigo.is_estoque_externo:
+                        estoque = Estoque.objects.filter(produto_id=item_antigo.produto_id).first()
+                        if estoque:
+                            estoque.quantidade += item_antigo.quantidade
+                            estoque.save()
 
+                # Remove os itens antigos do pedido
                 itens_antigos.delete()
 
-                # Adiciona os novos itens e mantém o ajuste no estoque já feito
+                # Processa os novos itens do pedido
                 for item in itens:
                     produto_id = item['produto_id']
                     quantidade = item['quantidade']
                     preco_unitario = item['preco_unitario']
+                    is_estoque_externo = item['is_estoque_externo']
 
+                    # Cria o novo item no pedido
                     ItemPedido.objects.create(
                         pedido=pedido,
                         produto_id=produto_id,
                         quantidade=quantidade,
-                        precoUnitario=preco_unitario
+                        precoUnitario=preco_unitario,
+                        is_estoque_externo=is_estoque_externo
                     )
 
                 return True, 'Pedido atualizado com sucesso!', pedido.idPedido
@@ -167,12 +177,14 @@ class PedidoSistema():
                     produto_id = item['produto_id']
                     quantidade = item['quantidade']
                     preco_unitario = item['preco_unitario']
+                    is_estoque_externo = item['is_estoque_externo']
 
                     ItemPedido.objects.create(
                         pedido=novo_pedido,
                         produto_id=produto_id,
                         quantidade=quantidade,
-                        precoUnitario=preco_unitario
+                        precoUnitario=preco_unitario,
+                        is_estoque_externo=is_estoque_externo
                     )
 
                 novo_pedido.save()

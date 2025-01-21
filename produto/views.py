@@ -17,7 +17,6 @@ class ProdutoCadastoView(APIView):
     def post(self, *args, **kwargs):
         produto_id = self.request.data.get('produto_id')
         nome = self.request.data.get('nome')
-        codigo = self.request.data.get('codigo')
         categoria = self.request.data.get('categoria')
         descricao = self.request.data.get('descricao')
         preco_compra = self.request.data.get('preco_compra')
@@ -25,7 +24,6 @@ class ProdutoCadastoView(APIView):
 
         status, mensagem, produto_id = service.produto.produto.ProdutoSistema().cadastrar_produto(produto_id=produto_id,
                                                                                         nome=nome,
-                                                                                        codigo=codigo,
                                                                                         categoria=categoria,
                                                                                         descricao=descricao,
                                                                                         preco_compra=preco_compra,

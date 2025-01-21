@@ -27,7 +27,7 @@ class ProdutoSistema():
                     ultima_movimentacao_usuario_sobrenome=Coalesce(ultima_movimentacao_usuario_sobrenome,
                                                                    models.Value(None))
                 ).values(
-                    'id', 'nome', 'codigo', 'descricao', 'preco_compra', 'preco_venda',
+                    'id', 'nome', 'descricao', 'preco_compra', 'preco_venda',
                     'categoria', 'estoque__quantidade', 'status',
                     'ultima_movimentacao_tipo', 'ultima_movimentacao_quantidade', 'ultima_movimentacao_data',
                     'ultima_movimentacao_usuario_nome', 'ultima_movimentacao_usuario_sobrenome'
@@ -43,27 +43,26 @@ class ProdutoSistema():
                         ultima_movimentacao_usuario_sobrenome=Coalesce(ultima_movimentacao_usuario_sobrenome,
                                                                        models.Value(None))
                     ).values(
-                        'id', 'nome', 'codigo', 'descricao', 'preco_compra', 'preco_venda',
+                        'id', 'nome', 'descricao', 'preco_compra', 'preco_venda',
                         'categoria', 'estoque__quantidade', 'status',
                         'ultima_movimentacao_tipo', 'ultima_movimentacao_quantidade', 'ultima_movimentacao_data',
                         'ultima_movimentacao_usuario_nome', 'ultima_movimentacao_usuario_sobrenome'
-                    )
+                    ).order_by("status").reverse()
                 )
 
             return True, 'Produtos retornados com sucesso', lista_produto
         except Exception as e:
             return False, str(e), []
 
-    def cadastrar_produto(self, produto_id=None, nome=None, codigo=None, categoria=None, descricao=None, preco_compra=None, preco_venda=None):
+    def cadastrar_produto(self, produto_id=None, nome=None, categoria=None, descricao=None, preco_compra=None, preco_venda=None):
         try:
             if not produto_id:
-                produto_existente = Produto.objects.filter(codigo=codigo).first()
+                produto_existente = Produto.objects.filter(id=produto_id).first()
                 if produto_existente:
                     return False, 'Produto com este código já cadastrado!', None
 
                 novo_produto = Produto(
                     nome=nome,
-                    codigo=codigo,
                     categoria=categoria,
                     descricao=descricao,
                     preco_compra=preco_compra,
@@ -79,7 +78,6 @@ class ProdutoSistema():
                     return False, 'Produto não encontrado!', None
 
                 produto.nome = nome
-                produto.codigo = codigo
                 produto.categoria = categoria
                 produto.descricao = descricao
                 produto.preco_compra = preco_compra

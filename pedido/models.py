@@ -23,6 +23,7 @@ class Pedido(models.Model):
 class ItemPedido(models.Model):
     idItemPedido = models.AutoField(primary_key=True)
     quantidade = models.IntegerField(null=False)
+    is_estoque_externo = models.BooleanField(default=False)
     precoUnitario = models.DecimalField(max_digits=10, decimal_places=2, null=False)
     pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name='itens')
     produto = models.ForeignKey(Produto, on_delete=models.CASCADE)
