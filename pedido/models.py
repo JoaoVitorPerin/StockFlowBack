@@ -4,7 +4,7 @@ from produto.models import Produto
 
 class Pedido(models.Model):
     idPedido = models.AutoField(primary_key=True)
-    dataPedido = models.DateField(null=False)
+    dataPedido = models.DateTimeField(null=False)
     vlrTotal = models.DecimalField(max_digits=10, decimal_places=2, null=False)
     desconto = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)
