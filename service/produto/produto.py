@@ -1,3 +1,4 @@
+from marca.models import Marca
 from produto.models import Produto, Estoque, MovimentacaoEstoque
 from django.db.models import OuterRef, Subquery
 from django.db.models.functions import Coalesce
@@ -8,6 +9,7 @@ from django.db import models
 class ProdutoSistema():
     def listar_produtos(self, produto_id=None):
         try:
+            # Subqueries para a última movimentação
             ultima_movimentacao = MovimentacaoEstoque.objects.filter(
                 produto_id=OuterRef('id')
             ).order_by('-data_movimentacao')
@@ -18,8 +20,9 @@ class ProdutoSistema():
             ultima_movimentacao_usuario_nome = Subquery(ultima_movimentacao.values('usuario__first_name')[:1])
             ultima_movimentacao_usuario_sobrenome = Subquery(ultima_movimentacao.values('usuario__last_name')[:1])
 
+            # Filtrar por produto_id se fornecido
             if produto_id:
-                produto = Produto.objects.filter(id=produto_id).select_related('estoque').annotate(
+                produto = Produto.objects.filter(id=produto_id).select_related('estoque', 'marca').annotate(
                     ultima_movimentacao_tipo=Coalesce(ultima_movimentacao_tipo, models.Value(None)),
                     ultima_movimentacao_quantidade=Coalesce(ultima_movimentacao_quantidade, models.Value(None)),
                     ultima_movimentacao_data=Coalesce(ultima_movimentacao_data, models.Value(None)),
@@ -27,15 +30,15 @@ class ProdutoSistema():
                     ultima_movimentacao_usuario_sobrenome=Coalesce(ultima_movimentacao_usuario_sobrenome,
                                                                    models.Value(None))
                 ).values(
-                    'id', 'nome', 'descricao', 'preco_compra', 'preco_venda',
-                    'categoria', 'estoque__quantidade', 'status',
+                    'id', 'nome', 'descricao', 'preco_compra', 'preco_venda', 'marca__id',
+                    'marca__nome', 'estoque__quantidade', 'status',
                     'ultima_movimentacao_tipo', 'ultima_movimentacao_quantidade', 'ultima_movimentacao_data',
                     'ultima_movimentacao_usuario_nome', 'ultima_movimentacao_usuario_sobrenome'
                 ).first()
                 lista_produto = produto
             else:
                 lista_produto = list(
-                    Produto.objects.all().select_related('estoque').annotate(
+                    Produto.objects.all().select_related('estoque', 'marca').annotate(
                         ultima_movimentacao_tipo=Coalesce(ultima_movimentacao_tipo, models.Value(None)),
                         ultima_movimentacao_quantidade=Coalesce(ultima_movimentacao_quantidade, models.Value(None)),
                         ultima_movimentacao_data=Coalesce(ultima_movimentacao_data, models.Value(None)),
@@ -44,7 +47,7 @@ class ProdutoSistema():
                                                                        models.Value(None))
                     ).values(
                         'id', 'nome', 'descricao', 'preco_compra', 'preco_venda',
-                        'categoria', 'estoque__quantidade', 'status',
+                        'marca__nome', 'estoque__quantidade', 'status',
                         'ultima_movimentacao_tipo', 'ultima_movimentacao_quantidade', 'ultima_movimentacao_data',
                         'ultima_movimentacao_usuario_nome', 'ultima_movimentacao_usuario_sobrenome'
                     ).order_by("status").reverse()
@@ -54,16 +57,24 @@ class ProdutoSistema():
         except Exception as e:
             return False, str(e), []
 
-    def cadastrar_produto(self, produto_id=None, nome=None, categoria=None, descricao=None, preco_compra=None, preco_venda=None):
+    def cadastrar_produto(self, produto_id=None, nome=None, marca_id=None, descricao=None, preco_compra=None,
+                          preco_venda=None):
         try:
+            # Verifica se está criando ou atualizando
             if not produto_id:
-                produto_existente = Produto.objects.filter(id=produto_id).first()
+                # Verifica se já existe um produto com o mesmo nome e marca
+                produto_existente = Produto.objects.filter(nome=nome, marca_id=marca_id).first()
                 if produto_existente:
-                    return False, 'Produto com este código já cadastrado!', None
+                    return False, 'Produto já cadastrado para essa marca!', None
+
+                # Cria um novo produto
+                nova_marca = Marca.objects.filter(id=marca_id).first()
+                if not nova_marca:
+                    return False, 'Marca não encontrada!', None
 
                 novo_produto = Produto(
                     nome=nome,
-                    categoria=categoria,
+                    marca=nova_marca,
                     descricao=descricao,
                     preco_compra=preco_compra,
                     preco_venda=preco_venda
@@ -73,12 +84,17 @@ class ProdutoSistema():
                 return True, 'Produto cadastrado com sucesso!', novo_produto.id
 
             else:
+                # Atualiza o produto existente
                 produto = Produto.objects.filter(id=produto_id).first()
                 if not produto:
                     return False, 'Produto não encontrado!', None
 
+                nova_marca = Marca.objects.filter(id=marca_id).first()
+                if not nova_marca:
+                    return False, 'Marca não encontrada!', None
+
                 produto.nome = nome
-                produto.categoria = categoria
+                produto.marca = nova_marca
                 produto.descricao = descricao
                 produto.preco_compra = preco_compra
                 produto.preco_venda = preco_venda

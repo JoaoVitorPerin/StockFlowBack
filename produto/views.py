@@ -17,14 +17,14 @@ class ProdutoCadastoView(APIView):
     def post(self, *args, **kwargs):
         produto_id = self.request.data.get('produto_id')
         nome = self.request.data.get('nome')
-        categoria = self.request.data.get('categoria')
+        marca_id = self.request.data.get('marca__id')
         descricao = self.request.data.get('descricao')
         preco_compra = self.request.data.get('preco_compra')
         preco_venda = self.request.data.get('preco_venda')
 
         status, mensagem, produto_id = service.produto.produto.ProdutoSistema().cadastrar_produto(produto_id=produto_id,
                                                                                         nome=nome,
-                                                                                        categoria=categoria,
+                                                                                        marca_id=marca_id,
                                                                                         descricao=descricao,
                                                                                         preco_compra=preco_compra,
                                                                                         preco_venda=preco_venda)

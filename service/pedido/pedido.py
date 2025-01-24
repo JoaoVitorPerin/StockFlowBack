@@ -36,7 +36,7 @@ class PedidoSistema():
                 # Busca os produtos relacionados ao pedido
                 itens = ItemPedido.objects.filter(pedido_id=pedido_id).select_related('produto').values(
                     'produto_id', 'produto__nome', 'quantidade', 'precoUnitario',
-                    'produto__categoria', 'produto__descricao', 'is_estoque_externo'
+                    'produto__marca_id', 'produto__descricao', 'is_estoque_externo'
                 )
 
                 # Adiciona os produtos ao resultado do pedido
@@ -64,7 +64,7 @@ class PedidoSistema():
 
                     itens = ItemPedido.objects.filter(pedido_id=pedido['idPedido']).select_related('produto').values(
                         'produto_id', 'produto__nome', 'quantidade', 'precoUnitario',
-                        'produto__categoria', 'produto__descricao', 'is_estoque_externo'
+                        'produto__marca_id', 'produto__marca__nome', 'produto__descricao', 'is_estoque_externo'
                     )
 
                     pedido['produtos'] = list(itens)
