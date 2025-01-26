@@ -1,5 +1,7 @@
+from django.utils import timezone
+
 from pedido.models import Pedido, ItemPedido
-from produto.models import Estoque
+from produto.models import Estoque, MovimentacaoEstoque, Produto
 from django.db.models import OuterRef, Subquery
 from django.db.models.functions import Coalesce
 from django.db import models
@@ -74,7 +76,7 @@ class PedidoSistema():
         except Exception as e:
             return False, str(e), []
 
-    def cadastrar_pedido(self, pedido_id=None, data_pedido=None, cliente_id=None, itens=None, desconto=0.0, frete=0.0,
+    def cadastrar_pedido(self, pedido_id=None, data_pedido=None, cliente_id=None, itens=None, desconto=0.0, frete=0.0, usuario_id=None,
                          logradouro=None, numero=None, complemento=None, bairro=None, localidade=None, uf=None, vlr_total=None,
                          cep=None):
         try:
@@ -98,6 +100,16 @@ class PedidoSistema():
                 # Se houver estoque suficiente, subtrai a quantidade solicitada
                 estoque.quantidade -= quantidade_solicitada
                 estoque.save()
+
+                produto = Produto.objects.filter(id=produto_id).first()
+                movimentacao_estoque = MovimentacaoEstoque(
+                    produto=produto,
+                    tipo='saida',
+                    quantidade=quantidade_solicitada,
+                    data_movimentacao=timezone.now(),
+                    usuario_id=usuario_id
+                )
+                movimentacao_estoque.save()
 
             # Dentro do bloco "Se é atualização de pedido"
             if pedido_id:
@@ -133,6 +145,16 @@ class PedidoSistema():
                         if estoque:
                             estoque.quantidade += item_antigo.quantidade
                             estoque.save()
+
+                            produto = Produto.objects.filter(id=produto_id).first()
+                            movimentacao_estoque = MovimentacaoEstoque(
+                                produto=produto,
+                                tipo='entrada',
+                                quantidade=item_antigo.quantidade,
+                                data_movimentacao=timezone.now(),
+                                usuario_id=usuario_id
+                            )
+                            movimentacao_estoque.save()
 
                 # Remove os itens antigos do pedido
                 itens_antigos.delete()

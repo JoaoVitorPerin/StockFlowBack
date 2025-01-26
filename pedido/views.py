@@ -24,6 +24,7 @@ class PedidoCadastroView(APIView):
         desconto = data.get('desconto', 0.0)
         frete = data.get('frete', 0.0)
         vlr_total = data.get('total', 0.0)
+        usuario_id = data.get('usuario_id')
 
         # Novos campos de endereço
         logradouro = data.get('logradouro')
@@ -47,6 +48,7 @@ class PedidoCadastroView(APIView):
             bairro=bairro,
             localidade=localidade,
             uf=uf,
+            usuario_id=usuario_id,
             cep=cep,
             vlr_total = vlr_total
         )
