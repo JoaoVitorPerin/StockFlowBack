@@ -120,6 +120,7 @@ class PedidoSistema():
                 pedido.localidade = localidade
                 pedido.uf = uf
                 pedido.cep = cep
+                pedido.status = 'separacao'
 
                 pedido.save()
 
@@ -168,7 +169,8 @@ class PedidoSistema():
                     bairro=bairro,
                     localidade=localidade,
                     uf=uf,
-                    cep=cep
+                    cep=cep,
+                    status='separacao'
                 )
                 novo_pedido.save()
 
@@ -223,5 +225,25 @@ class PedidoSistema():
 
             return True, 'Pedido deletado com sucesso!'
 
+        except Exception as e:
+            return False, str(e)
+
+    def alterar_status_pedido(self, pedido_id):
+        #status 1 = separacao
+        #status 2 = embalado
+        #status 3 = saiu_estoque
+        try:
+            pedido = Pedido.objects.filter(idPedido=pedido_id).first()
+            if not pedido:
+                return False, 'Pedido não encontrado!'
+
+            if(pedido.status == 'separacao'):
+                pedido.status = 'embalado'
+            elif(pedido.status == 'embalado'):
+                pedido.status = 'saiu_estoque'
+            else:
+                return False, 'Pedido já se encontra no status de saida de estoque!'
+            pedido.save()
+            return True, 'Status do pedido atualizado com sucesso!'
         except Exception as e:
             return False, str(e)

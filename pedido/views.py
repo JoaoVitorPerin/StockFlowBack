@@ -60,3 +60,12 @@ class PedidoCadastroView(APIView):
         status, mensagem = service.pedido.pedido.PedidoSistema().deletar_pedido(pedido_id=pedido_id)
 
         return JsonResponse({"mensagem": mensagem}, status=200)
+
+class PedidoStatusView(APIView):
+    @method_decorator(group_required('Administrador', 'Operador de Estoque'))
+    def post(self, *args, **kwargs):
+        data = self.request.data
+        pedido_id = data.get('pedido_id')
+
+        status, mensagem = service.pedido.pedido.PedidoSistema().alterar_status_pedido(pedido_id=pedido_id)
+        return JsonResponse({'status': status, 'mensagem': mensagem})

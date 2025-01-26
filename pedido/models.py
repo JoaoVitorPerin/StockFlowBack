@@ -18,6 +18,7 @@ class Pedido(models.Model):
     localidade = models.CharField(max_length=255, null=True, blank=True)
     uf = models.CharField(max_length=2, null=True, blank=True)
     cep = models.CharField(max_length=15, null=True, blank=True)
+    status = models.CharField(max_length=15, null=True, blank=True)
 
 
 class ItemPedido(models.Model):
