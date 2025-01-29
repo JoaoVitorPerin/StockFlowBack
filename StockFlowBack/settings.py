@@ -67,7 +67,7 @@ MIDDLEWARE = [
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:4200',
-    'http://161.35.235.104:80'
+    'http://161.35.235.104'
 ]
 
 ROOT_URLCONF = 'StockFlowBack.urls'
