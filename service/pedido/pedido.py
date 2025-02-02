@@ -37,7 +37,7 @@ class PedidoSistema():
 
                 # Busca os produtos relacionados ao pedido
                 itens = ItemPedido.objects.filter(pedido_id=pedido_id).select_related('produto').values(
-                    'produto_id', 'produto__nome', 'quantidade', 'precoUnitario',
+                    'produto_id', 'produto__nome', 'quantidade', 'precoUnitario', 'precoCusto',
                     'produto__marca_id', 'produto__descricao', 'is_estoque_externo'
                 )
 
@@ -165,6 +165,7 @@ class PedidoSistema():
                     quantidade = item['quantidade']
                     preco_unitario = item['preco_unitario']
                     is_estoque_externo = item['is_estoque_externo']
+                    preco_custo = item['preco_custo']
 
                     # Cria o novo item no pedido
                     ItemPedido.objects.create(
@@ -172,6 +173,7 @@ class PedidoSistema():
                         produto_id=produto_id,
                         quantidade=quantidade,
                         precoUnitario=preco_unitario,
+                        precoCusto=preco_custo,
                         is_estoque_externo=is_estoque_externo
                     )
 
@@ -202,12 +204,14 @@ class PedidoSistema():
                     quantidade = item['quantidade']
                     preco_unitario = item['preco_unitario']
                     is_estoque_externo = item['is_estoque_externo']
+                    preco_custo = item['preco_custo']
 
                     ItemPedido.objects.create(
                         pedido=novo_pedido,
                         produto_id=produto_id,
                         quantidade=quantidade,
                         precoUnitario=preco_unitario,
+                        precoCusto=preco_custo,
                         is_estoque_externo=is_estoque_externo
                     )
 

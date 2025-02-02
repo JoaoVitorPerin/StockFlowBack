@@ -1,5 +1,7 @@
 from cotacao.models import Cotacao
+from produto.models import Produto
 from django.forms.models import model_to_dict
+from decimal import Decimal
 
 class CotacaoSistema():
     def lista_ultima_cotacao(self):
@@ -21,6 +23,14 @@ class CotacaoSistema():
                 )
 
                 nova_cotacao.save()
+
+                produtos = Produto.objects.all()
+
+                #atualizar todos os produtos de acordo com a cotacao
+                for produto in produtos:
+                    produto.preco_compra_real = (float(produto.preco_compra) * float(cotacao)) * 1.25
+                    produto.save()
+
                 return True, 'Cadastro realizado', nova_cotacao.id
         except Exception as e:
             return False, str(e), None

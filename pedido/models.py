@@ -26,5 +26,6 @@ class ItemPedido(models.Model):
     quantidade = models.IntegerField(null=False)
     is_estoque_externo = models.BooleanField(default=False)
     precoUnitario = models.DecimalField(max_digits=10, decimal_places=2, null=False)
+    precoCusto= models.DecimalField(max_digits=10, decimal_places=2, null=True)
     pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name='itens')
     produto = models.ForeignKey(Produto, on_delete=models.CASCADE)

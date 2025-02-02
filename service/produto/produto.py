@@ -1,4 +1,5 @@
 from marca.models import Marca
+from cotacao.models import Cotacao
 from produto.models import Produto, Estoque, MovimentacaoEstoque
 from django.db.models import OuterRef, Subquery
 from django.db.models.functions import Coalesce
@@ -31,7 +32,7 @@ class ProdutoSistema():
                                                                    models.Value(None))
                 ).values(
                     'id', 'nome', 'descricao', 'preco_compra', 'preco_venda', 'marca__id',
-                    'marca__nome', 'estoque__quantidade', 'status',
+                    'marca__nome', 'estoque__quantidade', 'status', 'preco_compra_real',
                     'ultima_movimentacao_tipo', 'ultima_movimentacao_quantidade', 'ultima_movimentacao_data',
                     'ultima_movimentacao_usuario_nome', 'ultima_movimentacao_usuario_sobrenome'
                 ).first()
@@ -47,7 +48,7 @@ class ProdutoSistema():
                                                                        models.Value(None))
                     ).values(
                         'id', 'nome', 'descricao', 'preco_compra', 'preco_venda',
-                        'marca__nome', 'estoque__quantidade', 'status',
+                        'marca__nome', 'estoque__quantidade', 'status', 'preco_compra_real',
                         'ultima_movimentacao_tipo', 'ultima_movimentacao_quantidade', 'ultima_movimentacao_data',
                         'ultima_movimentacao_usuario_nome', 'ultima_movimentacao_usuario_sobrenome'
                     ).order_by("status").reverse()
@@ -72,11 +73,16 @@ class ProdutoSistema():
                 if not nova_marca:
                     return False, 'Marca não encontrada!', None
 
+                cotacao = Cotacao.objects.all().last()
+
+                preco_compra_real = (preco_compra * cotacao.valor) * 1.25
+
                 novo_produto = Produto(
                     nome=nome,
                     marca=nova_marca,
                     descricao=descricao,
                     preco_compra=preco_compra,
+                    preco_compra_real=preco_compra_real,
                     preco_venda=preco_venda
                 )
                 novo_produto.save()
@@ -93,10 +99,15 @@ class ProdutoSistema():
                 if not nova_marca:
                     return False, 'Marca não encontrada!', None
 
+                cotacao = Cotacao.objects.all().last()
+
+                preco_compra_real = (preco_compra * cotacao.valor) * 1.25
+
                 produto.nome = nome
                 produto.marca = nova_marca
                 produto.descricao = descricao
                 produto.preco_compra = preco_compra
+                produto.preco_compra_real = preco_compra_real
                 produto.preco_venda = preco_venda
                 produto.save()
 

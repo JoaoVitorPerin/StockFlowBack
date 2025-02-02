@@ -8,6 +8,7 @@ class Produto(models.Model):
     marca = models.ForeignKey(Marca, on_delete=models.CASCADE, related_name="produtos", null=True)
     descricao = models.TextField(blank=True, null=True)
     preco_compra = models.DecimalField(max_digits=10, decimal_places=2)
+    preco_compra_real = models.DecimalField(max_digits=10, decimal_places=2, null=True)
     preco_venda = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.BooleanField(default=True)
     def __str__(self):
