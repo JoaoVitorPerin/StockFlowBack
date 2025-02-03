@@ -4,9 +4,9 @@ from django.db import models
 class Cliente(models.Model):
     # Campos principais
     nome_completo = models.CharField(max_length=255)
-    cpf_cnpj = models.CharField(max_length=18, unique=True)
+    cpf_cnpj = models.CharField(max_length=18, unique=True, null=True)
     telefone = models.CharField(max_length=30, null=True, blank=True)
-    email = models.EmailField(max_length=255, unique=True)
+    email = models.EmailField(max_length=255, unique=True, null=True)
 
     # Endereço
     rua = models.CharField(max_length=255)
@@ -27,4 +27,4 @@ class Cliente(models.Model):
         blank=True,
         related_name='indicados'
     )
-    is_atleta = models.BooleanField(default=False)
+    is_atleta = models.BooleanField(default=False, null=True)

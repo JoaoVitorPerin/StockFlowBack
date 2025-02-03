@@ -101,7 +101,7 @@ class ProdutoSistema():
 
                 cotacao = Cotacao.objects.all().last()
 
-                preco_compra_real = (preco_compra * cotacao.valor) * 1.25
+                preco_compra_real = (float(preco_compra) * float(cotacao.valor)) * 1.25
 
                 produto.nome = nome
                 produto.marca = nova_marca

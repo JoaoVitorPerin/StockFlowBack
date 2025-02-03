@@ -50,13 +50,13 @@ class ClienteSistema():
         try:
             indicacaoInstance = Cliente.objects.filter(id=indicacao).first() if indicacao else None
 
-            if not cliente_id:
+            if not cliente_id :
                 cliente_existente = Cliente.objects.filter(cpf_cnpj=cpf_cnpj).first()
-                if cliente_existente:
+                if cliente_existente and cpf_cnpj:
                     return False, 'Cliente com este CPF/CNPJ já cadastrado!', None
 
                 cliente_existente_email = Cliente.objects.filter(email=email).first()
-                if cliente_existente_email:
+                if cliente_existente_email and email:
                     return False, 'Cliente com este email já cadastrado!', None
 
                 novo_cliente = Cliente(
@@ -82,6 +82,14 @@ class ClienteSistema():
                 cliente = Cliente.objects.filter(id=cliente_id).first()
                 if not cliente:
                     return False, 'Cliente não encontrado!', None
+
+                cliente_existente = Cliente.objects.filter(cpf_cnpj=cpf_cnpj).first()
+                if cliente_existente and cpf_cnpj:
+                    return False, 'Cliente com este CPF/CNPJ já cadastrado!', None
+
+                cliente_existente_email = Cliente.objects.filter(email=email).first()
+                if cliente_existente_email and email:
+                    return False, 'Cliente com este email já cadastrado!', None
 
                 cliente.nome_completo = nome_completo
                 cliente.cpf_cnpj = cpf_cnpj
