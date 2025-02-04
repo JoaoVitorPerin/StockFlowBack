@@ -1,32 +1,26 @@
 from produto.models import Estoque
 from django.db.models import Count, Sum
+from django.db.models import F
 
 class DashboardEstoque():
     def buscar_dados_estoque_geral(self, marca_id=None):
         try:
+            filtro = {}
             if marca_id:
-                dados_estoque = list(Estoque.objects.filter(produto_id__marca_id=marca_id).values(
-                    "quantidade", "produto_id__nome", "produto_id__marca_id__nome", "produto_id__preco_venda", "produto_id__preco_compra", "produto_id__preco_compra_real"
-                ))
-                mensagem = "Dados do estoque por marca retornados com sucesso!"
-            else:
-                dados_estoque = list(Estoque.objects.all().values(
-                    "quantidade", "produto_id__nome", "produto_id__marca_id__nome", "produto_id__preco_venda", "produto_id__preco_compra", "produto_id__preco_compra_real"
-                ))
-                mensagem = "Todos os dados do estoque retornados com sucesso!"
-
-            estoque_formatado = [
-                {
-                    "nome_produto": item["produto_id__nome"].strip(),
-                    "nome_marca": item["produto_id__marca_id__nome"].strip(),
-                    "quantidade": item["quantidade"],
-                    "compra_real": int(item["quantidade"]) * float(item["produto_id__preco_compra_real"]),
-                    "preco_venda": int(item["quantidade"]) * float(item["produto_id__preco_venda"])
+                filtro = {
+                    "produto_id__marca_id": marca_id
                 }
-                for item in dados_estoque
-            ]
 
-            return True, mensagem, estoque_formatado
+            dados_estoque = list(Estoque.objects.filter(**filtro).values(
+                "quantidade", 
+                nome_aproduto=F("produto_id__nome"),
+                nome_marca=F("produto_id__marca_id__nome"),
+                preco_venda=F("produto_id__preco_venda") * F("quantidade"),
+                compra_real=F("produto_id__preco_compra_real") * F("quantidade")
+            ))
+            mensagem = "Dados do estoque por marca retornados com sucesso!"
+
+            return True, mensagem, dados_estoque
 
         except Exception as e:
             return False, str(e), []
