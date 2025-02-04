@@ -51,7 +51,8 @@ INSTALLED_APPS = [
     'cliente',
     'pedido',
     'cotacao',
-    'marca'
+    'marca',
+    'dashboard'
 ]
 
 MIDDLEWARE = [
