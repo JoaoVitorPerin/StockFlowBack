@@ -13,10 +13,12 @@ class DashboardEstoque():
 
             dados_estoque = list(Estoque.objects.filter(**filtro).values(
                 "quantidade", 
-                nome_aproduto=F("produto_id__nome"),
+                nome_produto=F("produto_id__nome"),
                 nome_marca=F("produto_id__marca_id__nome"),
-                preco_venda=F("produto_id__preco_venda") * F("quantidade"),
-                compra_real=F("produto_id__preco_compra_real") * F("quantidade")
+                preco_venda=F("produto_id__preco_venda"),
+                preco_venda_multiplicado=F("produto_id__preco_venda") * F("quantidade"),
+                compra_real=F("produto_id__preco_compra_real"),
+                compra_real_multiplicado=F("produto_id__preco_compra_real") * F("quantidade")
             ))
             mensagem = "Dados do estoque por marca retornados com sucesso!"
 
