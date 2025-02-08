@@ -1,11 +1,13 @@
 from django.db import models
 
 from marca.models import Marca
+from categoria.models import Categoria
 from user.models import Usuario
 
 class Produto(models.Model):
     nome = models.CharField(max_length=255)
     marca = models.ForeignKey(Marca, on_delete=models.CASCADE, related_name="produtos", null=True)
+    categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE, related_name="produtos", null=True)
     descricao = models.TextField(blank=True, null=True)
     preco_compra = models.DecimalField(max_digits=10, decimal_places=2)
     preco_compra_real = models.DecimalField(max_digits=10, decimal_places=2, null=True)

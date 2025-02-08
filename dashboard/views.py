@@ -8,7 +8,8 @@ class EstoqueDashboardView(APIView):
     @method_decorator(group_required('Administrador'))
     def get(self, *args, **kwargs):
         marca_id = self.request.GET.get('marca_id')
-        status, mensagem, estoque = service.dashboard.dashboard.DashboardEstoque().buscar_dados_estoque_geral(marca_id=marca_id)
+        categoria_id= self.request.GET.get('categoria_id')
+        status, mensagem, estoque = service.dashboard.dashboard.DashboardEstoque().buscar_dados_estoque_geral(marca_id=marca_id, categoria_id=categoria_id)
 
         return JsonResponse({'status': status, 'mensagem': mensagem, 'estoque': estoque})
 

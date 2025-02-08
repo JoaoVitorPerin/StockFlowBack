@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'pedido',
     'cotacao',
     'marca',
+    'categoria',
     'dashboard'
 ]
 

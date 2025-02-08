@@ -1,4 +1,5 @@
 from marca.models import Marca
+from categoria.models import Categoria
 from cotacao.models import Cotacao
 from produto.models import Produto, Estoque, MovimentacaoEstoque
 from django.db.models import OuterRef, Subquery
@@ -32,7 +33,7 @@ class ProdutoSistema():
                                                                    models.Value(None))
                 ).values(
                     'id', 'nome', 'descricao', 'preco_compra', 'preco_venda', 'marca__id',
-                    'marca__nome', 'estoque__quantidade', 'status', 'preco_compra_real',
+                    'marca__nome', 'categoria__id', 'categoria__nome', 'estoque__quantidade', 'status', 'preco_compra_real',
                     'ultima_movimentacao_tipo', 'ultima_movimentacao_quantidade', 'ultima_movimentacao_data',
                     'ultima_movimentacao_usuario_nome', 'ultima_movimentacao_usuario_sobrenome'
                 ).first()
@@ -48,7 +49,7 @@ class ProdutoSistema():
                                                                        models.Value(None))
                     ).values(
                         'id', 'nome', 'descricao', 'preco_compra', 'preco_venda',
-                        'marca__nome', 'estoque__quantidade', 'status', 'preco_compra_real',
+                        'marca__nome', 'categoria__id', 'categoria__nome', 'estoque__quantidade', 'status', 'preco_compra_real',
                         'ultima_movimentacao_tipo', 'ultima_movimentacao_quantidade', 'ultima_movimentacao_data',
                         'ultima_movimentacao_usuario_nome', 'ultima_movimentacao_usuario_sobrenome'
                     ).order_by("status").reverse()
@@ -58,7 +59,7 @@ class ProdutoSistema():
         except Exception as e:
             return False, str(e), []
 
-    def cadastrar_produto(self, produto_id=None, nome=None, marca_id=None, descricao=None, preco_compra=None,
+    def cadastrar_produto(self, produto_id=None, nome=None, marca_id=None, categoria_id=None, descricao=None, preco_compra=None,
                           preco_venda=None):
         try:
             # Verifica se está criando ou atualizando
@@ -73,6 +74,10 @@ class ProdutoSistema():
                 if not nova_marca:
                     return False, 'Marca não encontrada!', None
 
+                nova_categoria = Categoria.objects.filter(id=categoria_id).first()
+                if not nova_categoria:
+                    return False, 'Categoria não encontrada!', None
+
                 cotacao = Cotacao.objects.all().last()
 
                 preco_compra_real = (preco_compra * cotacao.valor) * 1.25
@@ -80,6 +85,7 @@ class ProdutoSistema():
                 novo_produto = Produto(
                     nome=nome,
                     marca=nova_marca,
+                    categoria=nova_categoria,
                     descricao=descricao,
                     preco_compra=preco_compra,
                     preco_compra_real=preco_compra_real,
@@ -99,12 +105,17 @@ class ProdutoSistema():
                 if not nova_marca:
                     return False, 'Marca não encontrada!', None
 
+                nova_categoria = Categoria.objects.filter(id=categoria_id).first()
+                if not nova_categoria:
+                    return False, 'Categoria não encontrada!', None
+
                 cotacao = Cotacao.objects.all().last()
 
                 preco_compra_real = (float(preco_compra) * float(cotacao.valor)) * 1.25
 
                 produto.nome = nome
                 produto.marca = nova_marca
+                produto.categoria = nova_categoria
                 produto.descricao = descricao
                 produto.preco_compra = preco_compra
                 produto.preco_compra_real = preco_compra_real
