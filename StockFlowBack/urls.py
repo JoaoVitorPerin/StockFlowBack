@@ -10,4 +10,5 @@ urlpatterns = [
     path('marca/', include('marca.urls')),
     path('categoria/', include('categoria.urls')),
     path('dashboard/', include('dashboard.urls')),
+    path('custo-mensal/', include('custo_mensal.urls')),
 ]

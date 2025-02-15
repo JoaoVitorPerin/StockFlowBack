@@ -53,7 +53,8 @@ INSTALLED_APPS = [
     'cotacao',
     'marca',
     'categoria',
-    'dashboard'
+    'dashboard',
+    'custo_mensal'
 ]
 
 MIDDLEWARE = [

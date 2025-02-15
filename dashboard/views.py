@@ -19,3 +19,11 @@ class EstoqueMarcas(APIView):
         status, mensagem, marcas = service.dashboard.dashboard.DashboardEstoque().buscar_dados_por_marcas()
 
         return JsonResponse({'status': status, 'mensagem': mensagem, 'marcas': marcas})
+
+class VendasDashboardView(APIView):
+    @method_decorator(group_required('Administrador'))
+    def get(self, *args, **kwargs):
+        anomes = self.request.GET.get('anomes')
+        status, mensagem, vendas = service.dashboard.dashboard.DashboardVendas.buscar_dados_vendas(anomes=anomes)
+
+        return JsonResponse({'status': status, 'mensagem': mensagem, 'vendas': vendas})
