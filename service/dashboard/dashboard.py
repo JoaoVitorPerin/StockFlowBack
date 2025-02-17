@@ -125,7 +125,7 @@ class DashboardVendas:
 
             dados_cards = {
                 "vlr_total_venda": total_venda,
-                "vlr_total_custo": total_custo,
+                "vlr_total_custo": total_custo - total_custo_atleta,
                 "vlr_total_lucro": total_lucro,
                 "vlr_total_frete": total_frete,
                 "vlr_total_custo_atleta": total_custo_atleta,
