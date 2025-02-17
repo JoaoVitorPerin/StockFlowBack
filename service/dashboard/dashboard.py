@@ -64,7 +64,6 @@ class DashboardVendas:
             else:
                 data_fim = make_aware(datetime(int(ano), int(mes) + 1, 1, 0, 0, 0))
 
-            # Query otimizada para buscar os pedidos já com os itens
             pedidos = Pedido.objects.filter(
                 dataPedido__gte=data_inicio,
                 dataPedido__lt=data_fim
@@ -74,26 +73,32 @@ class DashboardVendas:
                 is_atleta=F("cliente_id__is_atleta"),
                 num_pedido=F("idPedido"),
                 vlr_custo=Sum(F("itens__precoCusto") * F("itens__quantidade")),
-                vlr_venda=Sum(F("itens__precoUnitario") * F("itens__quantidade"))
+                vlr_venda=Sum(F("itens__precoUnitario") * F("itens__quantidade")),
             ).prefetch_related(
-                Prefetch('itens', queryset=ItemPedido.objects.all(), to_attr='itens')
+                Prefetch('itempedido_set', queryset=ItemPedido.objects.all(), to_attr='itens')
             ).values(
-                "dataPedido", "idPedido", "nm_cliente", "is_atleta", "vlr_frete", "vlr_custo", "vlr_venda"
+                "dataPedido",
+                "idPedido",
+                "nm_cliente",
+                "is_atleta",
+                "vlr_frete",
+                "vlr_custo",
+                "vlr_venda"
             )
 
-            # Inicializando totais
             total_venda = 0
             total_custo = 0
             total_lucro = 0
-            total_custo_fixo = 0
+            total_frete = 0
+            total_custo_atleta = 0
+            qtd_pedidos_nao_atleta = 0
             pedidos_com_itens = []
 
             for pedido in pedidos:
                 pedido_dict = dict(pedido)
                 pedido_dict["vlr_custo"] = pedido["vlr_custo"] or 0
-                pedido_dict["vlr_venda"] = pedido["vlr_venda"] or 0
-                pedido_dict["vlr_lucro"] = pedido_dict["vlr_venda"] - pedido_dict["vlr_custo"] - pedido_dict[
-                    "vlr_frete"]
+                pedido_dict["vlr_venda"] = (pedido["vlr_venda"] or 0) + pedido["vlr_frete"]
+                pedido_dict["vlr_lucro"] = pedido_dict["vlr_venda"] - pedido_dict["vlr_custo"] - pedido_dict["vlr_frete"]
 
                 if pedido_dict["vlr_venda"] - pedido_dict["vlr_frete"] != 0:
                     pedido_dict["vlr_margem"] = round(
@@ -104,27 +109,34 @@ class DashboardVendas:
                 pedidos_com_itens.append(pedido_dict)
 
                 total_venda += pedido_dict["vlr_venda"]
-                total_custo += pedido_dict["vlr_custo"] + pedido_dict["vlr_frete"]
+                total_frete += pedido_dict["vlr_frete"]
+                total_custo += pedido_dict["vlr_custo"]
                 total_lucro += pedido_dict["vlr_lucro"]
 
-            # Buscando os custos fixos otimizadamente
-            custos_mensais = list(
-                CustoMensal.objects.filter(Q(anomes=anomes) | Q(recorrente=True)).values().order_by('id'))
+                if pedido["is_atleta"]:
+                    total_custo_atleta += pedido_dict["vlr_custo"]
+                else:
+                    qtd_pedidos_nao_atleta += 1;
 
-            for custo in custos_mensais:
-                total_custo_fixo += custo["valor"]
-                total_lucro -= custo["valor"]
+            total_custo_fixo = \
+            CustoMensal.objects.filter(Q(anomes=anomes) | Q(recorrente=True)).aggregate(total=Sum("valor"))[
+                "total"] or 0
+            total_lucro -= total_custo_fixo
 
             dados_cards = {
                 "vlr_total_venda": total_venda,
                 "vlr_total_custo": total_custo,
                 "vlr_total_lucro": total_lucro,
-                "vlr_total_custo_fixo": total_custo_fixo
+                "vlr_total_frete": total_frete,
+                "vlr_total_custo_atleta": total_custo_atleta,
+                "vlr_total_custo_fixo": total_custo_fixo,
+                "vlr_ticket_medio": round(total_venda / qtd_pedidos_nao_atleta, 2) if qtd_pedidos_nao_atleta > 0 else 0,
+                "vlr_margem_liquida": round((total_lucro / total_venda) * 100, 2) if total_venda > 0 else 0
             }
 
             retorno = {
                 "pedidos": pedidos_com_itens,
-                "custos_mensais": custos_mensais,
+                "custos_mensais": list(CustoMensal.objects.filter(Q(anomes=anomes) | Q(recorrente=True)).values().order_by('id')),
                 "cards": dados_cards
             }
 

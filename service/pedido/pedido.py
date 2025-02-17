@@ -2,14 +2,10 @@ from django.utils import timezone
 
 from pedido.models import Pedido, ItemPedido
 from produto.models import Estoque, MovimentacaoEstoque, Produto
-from django.db.models import OuterRef, Subquery
-from django.db.models.functions import Coalesce
-from django.db import models
+from django.db.models import Prefetch
 from django.forms.models import model_to_dict
 
 class PedidoSistema():
-    from django.forms.models import model_to_dict
-
     def listar_pedidos(self, pedido_id=None):
         try:
             if pedido_id:
@@ -45,31 +41,52 @@ class PedidoSistema():
                 pedido['produtos'] = list(itens)
                 lista_pedido = pedido
             else:
-                pedidos = Pedido.objects.select_related('cliente').all()
+                pedidos = Pedido.objects.select_related('cliente').prefetch_related(
+                    Prefetch('itens', queryset=ItemPedido.objects.select_related('produto'), to_attr='itens_prefetch')
+                )
+
                 lista_pedido = []
 
                 for pedido_obj in pedidos:
-                    pedido = model_to_dict(pedido_obj)
-
-                    cliente = model_to_dict(pedido_obj.cliente)
-                    cliente['endereco'] = {
-                        "logradouro": pedido_obj.logradouro,  # Dados diretamente do modelo Pedido
-                        "numero": pedido_obj.numero,
-                        "complemento": pedido_obj.complemento,
-                        "bairro": pedido_obj.bairro,
-                        "cidade": pedido_obj.localidade,
-                        "estado": pedido_obj.uf,
-                        "cep": pedido_obj.cep,
+                    pedido = {
+                        "idPedido": pedido_obj.idPedido,
+                        "dataPedido": pedido_obj.dataPedido,
+                        "frete": pedido_obj.frete,
+                        "desconto": pedido_obj.desconto,
+                        "status": pedido_obj.status,
                     }
 
-                    pedido['cliente'] = cliente
+                    cliente = {
+                        "id": pedido_obj.cliente.id,
+                        "nome_completo": pedido_obj.cliente.nome_completo,
+                        "email": pedido_obj.cliente.email,
+                        "endereco": {
+                            "logradouro": pedido_obj.logradouro,
+                            "numero": pedido_obj.numero,
+                            "complemento": pedido_obj.complemento,
+                            "bairro": pedido_obj.bairro,
+                            "cidade": pedido_obj.localidade,
+                            "estado": pedido_obj.uf,
+                            "cep": pedido_obj.cep,
+                        }
+                    }
 
-                    itens = ItemPedido.objects.filter(pedido_id=pedido['idPedido']).select_related('produto').values(
-                        'produto_id', 'produto__nome', 'quantidade', 'precoUnitario',
-                        'produto__marca_id', 'produto__marca__nome', 'produto__descricao', 'is_estoque_externo'
-                    )
+                    pedido["cliente"] = cliente
 
-                    pedido['produtos'] = list(itens)
+                    pedido["produtos"] = [
+                        {
+                            "produto_id": item.produto.id,
+                            "nome": item.produto.nome,
+                            "quantidade": item.quantidade,
+                            "precoUnitario": item.precoUnitario,
+                            "precoCusto": item.precoCusto,
+                            "marca_id": item.produto.marca_id,
+                            "descricao": item.produto.descricao,
+                            "is_estoque_externo": item.is_estoque_externo,
+                        }
+                        for item in pedido_obj.itens_prefetch
+                    ]
+
                     lista_pedido.append(pedido)
 
             return True, 'Pedidos retornados com sucesso', lista_pedido
