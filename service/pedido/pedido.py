@@ -42,8 +42,8 @@ class PedidoSistema():
                 lista_pedido = pedido
             else:
                 pedidos = Pedido.objects.select_related('cliente').prefetch_related(
-                    Prefetch('itens', queryset=ItemPedido.objects.select_related('produto'), to_attr='itens_prefetch')
-                )
+                    Prefetch('itens', queryset=ItemPedido.objects.select_related('produto', 'produto__marca'), to_attr='itens_prefetch')
+                ).order_by('-idPedido')
 
                 lista_pedido = []
 
@@ -54,6 +54,7 @@ class PedidoSistema():
                         "frete": pedido_obj.frete,
                         "desconto": pedido_obj.desconto,
                         "status": pedido_obj.status,
+                        "vlr_total": pedido_obj.vlrTotal
                     }
 
                     cliente = {
@@ -80,7 +81,8 @@ class PedidoSistema():
                             "quantidade": item.quantidade,
                             "precoUnitario": item.precoUnitario,
                             "precoCusto": item.precoCusto,
-                            "marca_id": item.produto.marca_id,
+                            "marca_id": item.produto.marca.id,
+                            "marca_nome": item.produto.marca.nome,
                             "descricao": item.produto.descricao,
                             "is_estoque_externo": item.is_estoque_externo,
                         }

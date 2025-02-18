@@ -25,9 +25,20 @@ class DashboardEstoque():
                 compra_real=F("produto_id__preco_compra_real"),
                 compra_real_multiplicado=F("produto_id__preco_compra_real") * F("quantidade")
             ))
+
+            dados_cards = {
+                "vlr_total_venda": sum(item["preco_venda_multiplicado"] for item in dados_estoque),
+                "vlr_total_compra": sum(item["compra_real_multiplicado"] for item in dados_estoque),
+                "vlr_diferenca": sum(item["preco_venda_multiplicado"] for item in dados_estoque) - sum(item["compra_real_multiplicado"] for item in dados_estoque)
+            }
+
+            dict_estoque = {
+                "tabela": dados_estoque,
+                "cards": dados_cards
+            }
             mensagem = "Dados do estoque filtrados retornados com sucesso!"
 
-            return True, mensagem, dados_estoque
+            return True, mensagem, dict_estoque
 
         except Exception as e:
             return False, str(e), []
