@@ -83,8 +83,8 @@ class DashboardVendas:
                 nm_cliente=F("cliente_id__nome_completo"),
                 is_atleta=F("cliente_id__is_atleta"),
                 num_pedido=F("idPedido"),
+                vlr_total=F("vlrTotal"),
                 vlr_custo=Sum(F("itens__precoCusto") * F("itens__quantidade")),
-                vlr_venda=Sum(F("itens__precoUnitario") * F("itens__quantidade")),
             ).prefetch_related(
                 Prefetch('itempedido_set', queryset=ItemPedido.objects.all(), to_attr='itens')
             ).values(
@@ -94,8 +94,8 @@ class DashboardVendas:
                 "is_atleta",
                 "vlr_frete",
                 "vlr_custo",
-                "vlr_venda"
-            )
+                "vlr_total"
+            ).order_by("-dataPedido")
 
             total_venda = 0
             total_custo = 0
@@ -108,18 +108,17 @@ class DashboardVendas:
             for pedido in pedidos:
                 pedido_dict = dict(pedido)
                 pedido_dict["vlr_custo"] = pedido["vlr_custo"] or 0
-                pedido_dict["vlr_venda"] = (pedido["vlr_venda"] or 0) + pedido["vlr_frete"]
-                pedido_dict["vlr_lucro"] = pedido_dict["vlr_venda"] - pedido_dict["vlr_custo"] - pedido_dict["vlr_frete"]
+                pedido_dict["vlr_lucro"] = pedido_dict["vlr_total"] - pedido_dict["vlr_custo"] - pedido_dict["vlr_frete"]
 
-                if pedido_dict["vlr_venda"] - pedido_dict["vlr_frete"] != 0:
+                if pedido_dict["vlr_total"] - pedido_dict["vlr_frete"] != 0:
                     pedido_dict["vlr_margem"] = round(
-                        (pedido_dict["vlr_lucro"] / (pedido_dict["vlr_venda"] - pedido_dict["vlr_frete"])) * 100, 2)
+                        (pedido_dict["vlr_lucro"] / (pedido_dict["vlr_total"] - pedido_dict["vlr_frete"])) * 100, 2)
                 else:
                     pedido_dict["vlr_margem"] = 0
 
                 pedidos_com_itens.append(pedido_dict)
 
-                total_venda += pedido_dict["vlr_venda"]
+                total_venda += pedido_dict["vlr_total"]
                 total_frete += pedido_dict["vlr_frete"]
                 total_custo += pedido_dict["vlr_custo"]
                 total_lucro += pedido_dict["vlr_lucro"]
