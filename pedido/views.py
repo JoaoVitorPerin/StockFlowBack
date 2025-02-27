@@ -69,5 +69,5 @@ class PedidoStatusView(APIView):
         data = self.request.data
         pedido_id = data.get('pedido_id')
 
-        status, mensagem = service.pedido.pedido.PedidoSistema().alterar_status_pedido(pedido_id=pedido_id)
+        status, mensagem = service.pedido.pedido.PedidoSistema().alterar_status_pedido(pedidos=pedido_id)
         return JsonResponse({'status': status, 'mensagem': mensagem})

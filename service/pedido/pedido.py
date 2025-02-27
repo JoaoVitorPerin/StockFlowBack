@@ -273,22 +273,21 @@ class PedidoSistema():
         except Exception as e:
             return False, str(e)
 
-    def alterar_status_pedido(self, pedido_id):
+    def alterar_status_pedido(self, pedidos=None):
         #status 1 = separacao
         #status 2 = embalado
         #status 3 = saiu_estoque
         try:
-            pedido = Pedido.objects.filter(idPedido=pedido_id).first()
-            if not pedido:
-                return False, 'Pedido não encontrado!'
+            for pedido in pedidos:
+                pedido = Pedido.objects.filter(idPedido=pedido).first()
+                if not pedido:
+                    continue
 
-            if(pedido.status == 'separacao'):
-                pedido.status = 'embalado'
-            elif(pedido.status == 'embalado'):
-                pedido.status = 'saiu_estoque'
-            else:
-                return False, 'Pedido já se encontra no status de saida de estoque!'
-            pedido.save()
+                if(pedido.status == 'separacao'):
+                    pedido.status = 'embalado'
+                elif(pedido.status == 'embalado'):
+                    pedido.status = 'saiu_estoque'
+                pedido.save()
             return True, 'Status do pedido atualizado com sucesso!'
         except Exception as e:
             return False, str(e)
