@@ -1,9 +1,11 @@
 from produto.models import Estoque
 from django.db.models import Sum
+from collections import defaultdict
 from django.db.models import F, Prefetch, Q
 from django.utils.timezone import make_aware
 from datetime import datetime
 from pedido.models import Pedido, ItemPedido
+from cliente.models import Cliente
 from custo_mensal.models import CustoMensal
 
 class DashboardEstoque():
@@ -155,3 +157,134 @@ class DashboardVendas:
 
         except Exception as e:
             return False, f"Erro ao buscar dados de vendas: {str(e)}", []
+
+class DashboardAtletas():
+    def buscar_dados_atletas(self, anomes=None, atleta_id=None):
+        try:
+            mes = anomes[4:]
+            ano = anomes[:4]
+
+            data_inicio = make_aware(datetime(int(ano), int(mes), 1, 0, 0, 0))
+            if int(mes) == 12:
+                data_fim = make_aware(datetime(int(ano) + 1, 1, 1, 0, 0, 0))
+            else:
+                data_fim = make_aware(datetime(int(ano), int(mes) + 1, 1, 0, 0, 0))
+
+            if(atleta_id):
+                filtro_pedidos = {
+                    "dataPedido__gte": data_inicio,
+                    "dataPedido__lt": data_fim
+                }
+
+                filtro_pedidos["cliente_id__indicacao_id"] = atleta_id
+
+                pedidos = Pedido.objects.filter(**filtro_pedidos).annotate(
+                    vlr_frete=F("frete"),
+                    nm_cliente=F("cliente_id__nome_completo"),
+                    num_pedido=F("idPedido"),
+                    vlr_total=F("vlrTotal"),
+                    vlr_custo=Sum(F("itens__precoCusto") * F("itens__quantidade")),
+                ).prefetch_related(
+                    Prefetch('itempedido_set', queryset=ItemPedido.objects.all(), to_attr='itens')
+                ).values(
+                    "dataPedido",
+                    "idPedido",
+                    "nm_cliente",
+                    "vlr_frete",
+                    "vlr_custo",
+                    "vlr_total"
+                ).order_by("-dataPedido")
+
+                pedidos_com_itens = []
+
+                for pedido in pedidos:
+                    pedido_dict = dict(pedido)
+
+                    pedido_dict["vlr_custo"] = pedido["vlr_custo"] or 0
+
+                    pedido_dict["vlr_lucro"] = pedido_dict["vlr_total"] - pedido_dict["vlr_custo"] - pedido_dict[
+                        "vlr_frete"]
+
+                    if pedido_dict["vlr_total"] - pedido_dict["vlr_frete"] != 0:
+                        pedido_dict["vlr_margem"] = round(
+                            (pedido_dict["vlr_lucro"] / (pedido_dict["vlr_total"] - pedido_dict["vlr_frete"])) * 100, 2
+                        )
+                    else:
+                        pedido_dict["vlr_margem"] = 0
+
+                    pedidos_com_itens.append(pedido_dict)
+
+                return True, "Pedidos retornados com sucesso", pedidos_com_itens
+            else:
+                pedidos = Pedido.objects.filter(
+                    dataPedido__gte=data_inicio,
+                    dataPedido__lt=data_fim
+                ).annotate(
+                    vlr_frete=F("frete"),
+                    nm_cliente=F("cliente_id__nome_completo"),
+                    id_indicacao=F("cliente_id__indicacao_id"),
+                    nm_indicacao=F("cliente_id__indicacao_id__nome_completo"),
+                    is_atleta=F("cliente_id__is_atleta"),
+                    num_pedido=F("idPedido"),
+                    vlr_total=F("vlrTotal"),
+                    vlr_custo=Sum(F("itens__precoCusto") * F("itens__quantidade")),
+                ).prefetch_related(
+                    Prefetch('itempedido_set', queryset=ItemPedido.objects.all(), to_attr='itens')
+                ).values(
+                    "idPedido",
+                    "dataPedido",
+                    "nm_cliente",
+                    "id_indicacao",
+                    "nm_indicacao",
+                    "is_atleta",
+                    "vlr_frete",
+                    "vlr_custo",
+                    "vlr_total",
+                    "cliente_id"
+                ).order_by("-dataPedido")
+
+                atletas = Cliente.objects.filter(is_atleta=True).values("id", "nome_completo")
+                atletas_dict = {atleta["id"]: atleta["nome_completo"] for atleta in atletas}
+
+                indicacoes_agrupadas = defaultdict(lambda: {
+                    "id_indicacao": 0,
+                    "nm_indicacao": "",
+                    "vlr_total_lucro_pedidos": 0,
+                    "qtd_indicacao": 0,
+                    "vlr_custo": 0,  # Soma do valor total dos pedidos relacionados
+                })
+
+                for pedido in pedidos:
+                    id_indicacao = pedido["id_indicacao"] or pedido[
+                        "cliente_id"]  # Se não houver indicacao_id, usa cliente_id
+
+                    if id_indicacao not in atletas_dict:
+                        continue  # Ignorar se não for atleta
+
+                    nm_indicacao = atletas_dict[id_indicacao]
+
+                    vlr_custo = pedido["vlr_custo"] or 0
+                    vlr_frete = pedido["vlr_frete"] or 0
+                    vlr_total = pedido["vlr_total"] or 0
+
+                    # Calculando o lucro
+                    vlr_lucro = vlr_total - vlr_custo - vlr_frete
+
+                    # Atualizando os valores no dicionário agrupado
+                    if pedido["cliente_id"] != id_indicacao:
+                        indicacoes_agrupadas[id_indicacao]["id_indicacao"] = id_indicacao
+                        indicacoes_agrupadas[id_indicacao]["nm_indicacao"] = nm_indicacao
+                        indicacoes_agrupadas[id_indicacao]["vlr_total_lucro_pedidos"] += vlr_lucro
+                        indicacoes_agrupadas[id_indicacao]["qtd_indicacao"] += 1
+
+                    if pedido["is_atleta"]:
+                        indicacoes_agrupadas[id_indicacao]["vlr_custo"] += vlr_custo
+
+                resultado_final = list(indicacoes_agrupadas.values())
+
+                return True, "Apenas atletas agrupados com sucesso", resultado_final
+
+        except Exception as e:
+            return False, f"Erro ao buscar dados dos atletas: {str(e)}", []
+
+

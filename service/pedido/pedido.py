@@ -113,8 +113,8 @@ class PedidoSistema():
                 if not estoque:
                     return False, f"Produto ID {produto_id} não encontrado no estoque!", None
 
-                if estoque.quantidade < quantidade_solicitada:
-                    return False, f"Estoque insuficiente para o produto ID {produto_id}! Disponível: {estoque.quantidade}, Solicitado: {quantidade_solicitada}", None
+                # if estoque.quantidade < quantidade_solicitada:
+                #     return False, f"Estoque insuficiente para o produto ID {produto_id}! Disponível: {estoque.quantidade}, Solicitado: {quantidade_solicitada}", None
 
                 # Se houver estoque suficiente, subtrai a quantidade solicitada
                 estoque.quantidade -= quantidade_solicitada
