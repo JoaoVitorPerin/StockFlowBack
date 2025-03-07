@@ -250,6 +250,7 @@ class DashboardAtletas():
                     "id_indicacao": 0,
                     "nm_indicacao": "",
                     "vlr_total_lucro_pedidos": 0,
+                    "vlr_total": 0,
                     "qtd_indicacao": 0,
                     "vlr_custo": 0,  # Soma do valor total dos pedidos relacionados
                 })
@@ -274,6 +275,7 @@ class DashboardAtletas():
                     if pedido["cliente_id"] != id_indicacao:
                         indicacoes_agrupadas[id_indicacao]["id_indicacao"] = id_indicacao
                         indicacoes_agrupadas[id_indicacao]["nm_indicacao"] = nm_indicacao
+                        indicacoes_agrupadas[id_indicacao]["vlr_total"] += vlr_total
                         indicacoes_agrupadas[id_indicacao]["vlr_total_lucro_pedidos"] += vlr_lucro
                         indicacoes_agrupadas[id_indicacao]["qtd_indicacao"] += 1
 

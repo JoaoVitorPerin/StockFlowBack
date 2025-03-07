@@ -137,7 +137,6 @@ class PedidoSistema():
                     return False, 'Pedido não encontrado!', None
 
                 # Atualiza os dados do pedido
-                pedido.dataPedido = data_pedido
                 pedido.cliente_id = cliente_id
                 pedido.desconto = desconto
                 pedido.frete = frete
@@ -151,7 +150,6 @@ class PedidoSistema():
                 pedido.localidade = localidade
                 pedido.uf = uf
                 pedido.cep = cep
-                pedido.status = 'separacao'
 
                 pedido.save()
 
