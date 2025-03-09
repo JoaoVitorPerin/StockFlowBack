@@ -7,14 +7,14 @@ from django.utils.decorators import method_decorator
 from rest_framework.permissions import AllowAny, IsAuthenticated
 
 class PedidoCadastroView(APIView):
-    @method_decorator(group_required('Administrador', 'Operador de Estoque'))
+    @method_decorator(group_required('Administrador', 'Operador de Estoque', 'Operador de Pedidos'))
     def get(self, *args, **kwargs):
         pedido_id = self.request.GET.get('pedido_id')
         status, mensagem, pedidos = service.pedido.pedido.PedidoSistema().listar_pedidos(pedido_id=pedido_id)
 
         return JsonResponse({'status': status, 'mensagem': mensagem, 'pedidos': pedidos})
 
-    @method_decorator(group_required('Administrador', 'Operador de Estoque'))
+    @method_decorator(group_required('Administrador', 'Operador de Estoque', 'Operador de Pedidos'))
     def post(self, *args, **kwargs):
         data = self.request.data
         pedido_id = data.get('pedido_id')
@@ -55,7 +55,7 @@ class PedidoCadastroView(APIView):
 
         return JsonResponse({'status': status, 'descricao': mensagem, 'pedido_id': pedido_id})
 
-    @method_decorator(group_required('Administrador', 'Operador de Estoque'))
+    @method_decorator(group_required('Administrador', 'Operador de Estoque', 'Operador de Pedidos'))
     def delete(self, *args, **kwargs):
         pedido_id = self.request.GET.get('pedido_id')
 
@@ -64,7 +64,7 @@ class PedidoCadastroView(APIView):
         return JsonResponse({"mensagem": mensagem}, status=200)
 
 class PedidoStatusView(APIView):
-    @method_decorator(group_required('Administrador', 'Operador de Estoque'))
+    @method_decorator(group_required('Administrador', 'Operador de Estoque', 'Operador de Pedidos'))
     def post(self, *args, **kwargs):
         data = self.request.data
         pedido_id = data.get('pedido_id')

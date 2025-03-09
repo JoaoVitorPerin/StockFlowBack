@@ -6,14 +6,14 @@ import service.cliente.cliente
 from django.http import JsonResponse
 
 class ClienteCadastoView(APIView):
-    @method_decorator(group_required('Administrador', 'Operador de Estoque'))
+    @method_decorator(group_required('Administrador', 'Operador de Estoque', 'Operador de Pedidos'))
     def get(self, *args, **kwargs):
         cliente_id = self.request.GET.get('cliente_id')
         status, mensagem, clientes = service.cliente.cliente.ClienteSistema().listar_clientes(cliente_id=cliente_id)
 
         return JsonResponse({'status': status, 'mensagem': mensagem, 'clientes': clientes})
 
-    @method_decorator(group_required('Administrador', 'Operador de Estoque'))
+    @method_decorator(group_required('Administrador', 'Operador de Estoque', 'Operador de Pedidos'))
     def post(self, *args, **kwargs):
         cliente_id = self.request.data.get('cliente_id')
         nome_completo = self.request.data.get('nome_completo')
@@ -47,7 +47,7 @@ class ClienteCadastoView(APIView):
 
         return JsonResponse({'status': status, 'descricao': mensagem, 'cliente_id': cliente_id})
 
-    @method_decorator(group_required('Administrador', 'Operador de Estoque'))
+    @method_decorator(group_required('Administrador', 'Operador de Estoque', 'Operador de Pedidos'))
     def delete(self, *args, **kwargs):
         cliente_id = self.request.GET.get('cliente_id')
 
