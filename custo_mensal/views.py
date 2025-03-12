@@ -8,8 +8,8 @@ class CustoMensalView(APIView):
     @method_decorator(group_required('Administrador'))
     def get(self, *args, **kwargs):
         custo_id = self.request.GET.get('custo_id')
-        anomes = self.request.GET.getlist('anomes')
-        status, mensagem, custos = custo_service.CustoMensalSistema().listar_custo_mensal(custo_id=custo_id, anomes=anomes)
+
+        status, mensagem, custos = custo_service.CustoMensalSistema().listar_custo_mensal(custo_id=custo_id)
 
         return JsonResponse({'status': status, 'mensagem': mensagem, 'custos': custos})
 
@@ -17,14 +17,16 @@ class CustoMensalView(APIView):
     def post(self, *args, **kwargs):
         data = self.request.data
         custo_id = data.get('custo_id')
-        anomes = data.get('anomes')
+        dat_ini = data.get('dat_ini')
+        dat_fim = data.get('dat_fim')
         valor = data.get('valor')
         nome = data.get('nome')
         recorrente = data.get('recorrente')
 
         status, mensagem, custo_id = custo_service.CustoMensalSistema().cadastrar_custo_mensal(
             custo_id=custo_id,
-            anomes=anomes,
+            dat_ini=dat_ini,
+            dat_fim=dat_fim,
             valor=valor,
             nome=nome,
             recorrente=recorrente

@@ -130,8 +130,14 @@ class DashboardVendas:
                 else:
                     qtd_pedidos_nao_atleta += 1;
 
+            anomes_date = datetime.strptime(str(anomes) , "%Y%m")
+
             total_custo_fixo = \
-            CustoMensal.objects.filter(Q(anomes=anomes) | Q(recorrente=True)).aggregate(total=Sum("valor"))[
+                CustoMensal.objects.filter(
+                    Q(recorrente=True) |
+                    Q(dat_ini__year__lte=anomes_date.year, dat_ini__month__lte=anomes_date.month) &
+                    (Q(dat_fim__year__gte=anomes_date.year, dat_fim__month__gte=anomes_date.month) | Q(dat_fim__isnull=True))
+                ).aggregate(total=Sum("valor"))[
                 "total"] or 0
             total_lucro -= total_custo_fixo
 
@@ -146,9 +152,17 @@ class DashboardVendas:
                 "vlr_margem_liquida": round((total_lucro / total_venda) * 100, 2) if total_venda > 0 else 0
             }
 
+            custos = list(
+                CustoMensal.objects.filter(
+                    Q(recorrente=True) |
+                    Q(dat_ini__year__lte=anomes_date.year, dat_ini__month__lte=anomes_date.month) &
+                    (Q(dat_fim__year__gte=anomes_date.year, dat_fim__month__gte=anomes_date.month) | Q(dat_fim__isnull=True))
+                ).values().order_by('id')
+            )
+
             retorno = {
                 "pedidos": pedidos_com_itens,
-                "custos_mensais": list(CustoMensal.objects.filter(Q(anomes=anomes) | Q(recorrente=True)).values().order_by('id')),
+                "custos_mensais": custos,
                 "cards": dados_cards
             }
 

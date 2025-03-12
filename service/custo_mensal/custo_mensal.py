@@ -2,24 +2,25 @@ from custo_mensal.models import CustoMensal
 from django.db.models import Q
 
 class CustoMensalSistema():
-    def listar_custo_mensal(self, custo_id=None, anomes=None):
+    def listar_custo_mensal(self, custo_id=None):
         try:
             if custo_id:
-                custo = CustoMensal.objects.values().first()
+                custo = CustoMensal.objects.values().filter(id=custo_id).first()
                 lista_custo = custo
             else:
-                lista_custo = list(CustoMensal.objects.filter(Q(anomes=anomes[0]) | Q(recorrente=True)).all().values().order_by('id'))
+                lista_custo = list(CustoMensal.objects.all().values().order_by('id'))
             return True, 'Custos mensais retornados com sucesso', lista_custo
         except Exception as e:
             return False, str(e), []
 
-    def cadastrar_custo_mensal(self, custo_id=None, nome=None, valor=None, anomes=None, recorrente=None):
+    def cadastrar_custo_mensal(self, custo_id=None, nome=None, valor=None, dat_ini=None, dat_fim=None, recorrente=None):
         try:
             if not custo_id :
                 novo_custo = CustoMensal(
                     nome=nome,
                     valor=valor,
-                    anomes=anomes,
+                    dat_ini=dat_ini,
+                    dat_fim=dat_fim,
                     recorrente=recorrente
                 )
                 novo_custo.save()
@@ -33,7 +34,8 @@ class CustoMensalSistema():
 
                 custo_mensal.nome = nome
                 custo_mensal.valor = valor
-                custo_mensal.anomes = anomes
+                custo_mensal.dat_ini = dat_ini
+                custo_mensal.dat_fim = dat_fim
                 custo_mensal.recorrente = recorrente
                 custo_mensal.save()
 
