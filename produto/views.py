@@ -6,7 +6,7 @@ from django.utils.decorators import method_decorator
 from rest_framework.permissions import AllowAny, IsAuthenticated
 
 class ProdutoCadastoView(APIView):
-    @method_decorator(group_required('Administrador', 'Operador de Estoque'))
+    @method_decorator(group_required('Administrador', 'Operador de Estoque', 'Operador de Pedidos'))
     def get(self, *args, **kwargs):
         produto_id = self.request.GET.get('produto_id')
         status, mensagem, produtos = service.produto.produto.ProdutoSistema().listar_produtos(produto_id=produto_id)
@@ -42,13 +42,13 @@ class ProdutoCadastoView(APIView):
         return JsonResponse({'status': status, 'descricao': mensagem, 'produto_id': produto_id})
 
 class ProdutoEstoqueView(APIView):
-    @method_decorator(group_required('Administrador', 'Operador de Estoque'))
+    @method_decorator(group_required('Administrador', 'Operador de Estoque', 'Operador de Pedidos'))
     def get(self, *args, **kwargs):
         status, mensagem, lista = service.produto.produto.ProdutoSistema().buscar_movimentacao_estoque()
         return JsonResponse({'status': status, 'descricao': mensagem, 'movimentacao': lista})
 
 
-    @method_decorator(group_required('Administrador', 'Operador de Estoque'))
+    @method_decorator(group_required('Administrador', 'Operador de Estoque', 'Operador de Pedidos'))
     def post(self, *args, **kwargs):
         produto_id = self.request.data.get('produto_id')
         quantidade = self.request.data.get('quantidade')

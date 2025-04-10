@@ -191,6 +191,7 @@ class ProdutoSistema():
             movimentacoes = movimentacoes_query.values(
                 'id',
                 'produto__nome',
+                'produto__marca__nome',
                 'tipo',
                 'quantidade',
                 'data_movimentacao',
@@ -203,6 +204,7 @@ class ProdutoSistema():
                 {
                     'id': mov['id'],
                     'produto__nome': mov['produto__nome'],
+                    'produto__marca__nome': mov['produto__marca__nome'],
                     'tipo': mov['tipo'],
                     'quantidade': mov['quantidade'],
                     'data_movimentacao': mov['data_movimentacao'],

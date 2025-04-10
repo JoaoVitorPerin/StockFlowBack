@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.utils import timezone
 
 from pedido.models import Pedido, ItemPedido
@@ -95,178 +96,155 @@ class PedidoSistema():
         except Exception as e:
             return False, str(e), []
 
-    def cadastrar_pedido(self, pedido_id=None, data_pedido=None, cliente_id=None, itens=None, desconto=0.0, frete=0.0, usuario_id=None,
-                         logradouro=None, numero=None, complemento=None, bairro=None, localidade=None, uf=None, vlr_total=None,
+    def cadastrar_pedido(self, pedido_id=None, data_pedido=None, cliente_id=None, itens=None, desconto=0.0, frete=0.0,
+                         usuario_id=None,
+                         logradouro=None, numero=None, complemento=None, bairro=None, localidade=None, uf=None,
+                         vlr_total=None,
                          cep=None):
         try:
-            # Valida e ajusta o estoque para todos os itens
-            for item in itens:
-                produto_id = item['produto_id']
-                quantidade_solicitada = item['quantidade']
-                is_estoque_externo = item['is_estoque_externo']
-
-                if is_estoque_externo:
-                    continue
-
-                # Busca a quantidade disponível no estoque
-                estoque = Estoque.objects.filter(produto_id=produto_id).first()
-                if not estoque:
-                    return False, f"Produto ID {produto_id} não encontrado no estoque!", None
-
-                # if estoque.quantidade < quantidade_solicitada:
-                #     return False, f"Estoque insuficiente para o produto ID {produto_id}! Disponível: {estoque.quantidade}, Solicitado: {quantidade_solicitada}", None
-
-                # Se houver estoque suficiente, subtrai a quantidade solicitada
-                estoque.quantidade -= quantidade_solicitada
-                estoque.save()
-
-                produto = Produto.objects.filter(id=produto_id).first()
-                movimentacao_estoque = MovimentacaoEstoque(
-                    produto=produto,
-                    tipo='saida',
-                    quantidade=quantidade_solicitada,
-                    data_movimentacao=timezone.now(),
-                    usuario_id=usuario_id
-                )
-                movimentacao_estoque.save()
-
-            # Dentro do bloco "Se é atualização de pedido"
-            if pedido_id:
-                pedido = Pedido.objects.filter(idPedido=pedido_id).first()
-                if not pedido:
-                    return False, 'Pedido não encontrado!', None
-
-                # Atualiza os dados do pedido
-                pedido.cliente_id = cliente_id
-                pedido.desconto = desconto
-                pedido.frete = frete
-                pedido.vlrTotal = vlr_total
-
-                # Atualiza os campos de endereço
-                pedido.logradouro = logradouro
-                pedido.numero = numero
-                pedido.complemento = complemento
-                pedido.bairro = bairro
-                pedido.localidade = localidade
-                pedido.uf = uf
-                pedido.cep = cep
-
-                pedido.save()
-
-                # Ajusta o estoque para os itens antigos antes de apagar
-                itens_antigos = ItemPedido.objects.filter(pedido_id=pedido_id)
-                for item_antigo in itens_antigos:
-                    # Repor ao estoque a quantidade dos itens antigos, caso não fossem de estoque externo
-                    if not item_antigo.is_estoque_externo:
-                        estoque = Estoque.objects.filter(produto_id=item_antigo.produto_id).first()
-                        if estoque:
-                            estoque.quantidade += item_antigo.quantidade
-                            estoque.save()
-
-                            produto = Produto.objects.filter(id=produto_id).first()
-                            movimentacao_estoque = MovimentacaoEstoque(
-                                produto=produto,
-                                tipo='entrada',
-                                quantidade=item_antigo.quantidade,
-                                data_movimentacao=timezone.now(),
-                                usuario_id=usuario_id
-                            )
-                            movimentacao_estoque.save()
-
-                # Remove os itens antigos do pedido
-                itens_antigos.delete()
-
-                # Processa os novos itens do pedido
+            with transaction.atomic():
+                # Valida e ajusta o estoque para todos os itens
                 for item in itens:
                     produto_id = item['produto_id']
-                    quantidade = item['quantidade']
-                    preco_unitario = item['preco_unitario']
+                    quantidade_solicitada = item['quantidade']
                     is_estoque_externo = item['is_estoque_externo']
-                    preco_custo = item['preco_custo']
 
-                    # Cria o novo item no pedido
-                    ItemPedido.objects.create(
-                        pedido=pedido,
-                        produto_id=produto_id,
-                        quantidade=quantidade,
-                        precoUnitario=preco_unitario,
-                        precoCusto=preco_custo,
-                        is_estoque_externo=is_estoque_externo
+                    if is_estoque_externo:
+                        continue
+                    produto = Produto.objects.get(id=produto_id)
+                    estoque = Estoque.objects.select_for_update().filter(produto_id=produto_id).first()
+                    if not estoque:
+                        raise Exception(f"Produto {produto.nome} não possuí estoque!")
+
+                    if estoque.quantidade < quantidade_solicitada:
+                        raise Exception(
+                            f"Estoque insuficiente para o produto {produto.nome}! Disponível: {estoque.quantidade}, Solicitado: {quantidade_solicitada}")
+
+                    estoque.quantidade -= quantidade_solicitada
+                    estoque.save()
+
+
+                    MovimentacaoEstoque.objects.create(
+                        produto=produto,
+                        tipo='saida',
+                        quantidade=quantidade_solicitada,
+                        data_movimentacao=timezone.now(),
+                        usuario_id=usuario_id
                     )
 
-                return True, 'Pedido atualizado com sucesso!', pedido.idPedido
+                if pedido_id:
+                    pedido = Pedido.objects.filter(idPedido=pedido_id).first()
+                    if not pedido:
+                        raise Exception("Pedido não encontrado!")
 
-            # Caso seja um novo pedido
-            else:
-                novo_pedido = Pedido(
-                    dataPedido=data_pedido,
-                    cliente_id=cliente_id,
-                    desconto=desconto,
-                    frete=frete,
-                    vlrTotal=vlr_total,
-                    logradouro=logradouro,
-                    numero=numero,
-                    complemento=complemento,
-                    bairro=bairro,
-                    localidade=localidade,
-                    uf=uf,
-                    cep=cep,
-                    status='separacao'
-                )
-                novo_pedido.save()
+                    pedido.cliente_id = cliente_id
+                    pedido.desconto = desconto
+                    pedido.frete = frete
+                    pedido.vlrTotal = vlr_total
+                    pedido.logradouro = logradouro
+                    pedido.numero = numero
+                    pedido.complemento = complemento
+                    pedido.bairro = bairro
+                    pedido.localidade = localidade
+                    pedido.uf = uf
+                    pedido.cep = cep
+                    pedido.save()
 
-                vlr_total = 0
-                for item in itens:
-                    produto_id = item['produto_id']
-                    quantidade = item['quantidade']
-                    preco_unitario = item['preco_unitario']
-                    is_estoque_externo = item['is_estoque_externo']
-                    preco_custo = item['preco_custo']
+                    itens_antigos = ItemPedido.objects.filter(pedido_id=pedido_id)
+                    for item_antigo in itens_antigos:
+                        if not item_antigo.is_estoque_externo:
+                            estoque = Estoque.objects.select_for_update().filter(
+                                produto_id=item_antigo.produto_id).first()
+                            if estoque:
+                                estoque.quantidade += item_antigo.quantidade
+                                estoque.save()
 
-                    ItemPedido.objects.create(
-                        pedido=novo_pedido,
-                        produto_id=produto_id,
-                        quantidade=quantidade,
-                        precoUnitario=preco_unitario,
-                        precoCusto=preco_custo,
-                        is_estoque_externo=is_estoque_externo
+                                produto = Produto.objects.get(id=item_antigo.produto_id)
+                                MovimentacaoEstoque.objects.create(
+                                    produto=produto,
+                                    tipo='entrada',
+                                    quantidade=item_antigo.quantidade,
+                                    data_movimentacao=timezone.now(),
+                                    usuario_id=usuario_id
+                                )
+
+                    itens_antigos.delete()
+
+                    for item in itens:
+                        ItemPedido.objects.create(
+                            pedido=pedido,
+                            produto_id=item['produto_id'],
+                            quantidade=item['quantidade'],
+                            precoUnitario=item['preco_unitario'],
+                            precoCusto=item['preco_custo'],
+                            is_estoque_externo=item['is_estoque_externo']
+                        )
+
+                    return True, 'Pedido atualizado com sucesso!', pedido.idPedido
+
+                else:
+                    novo_pedido = Pedido.objects.create(
+                        dataPedido=data_pedido,
+                        cliente_id=cliente_id,
+                        desconto=desconto,
+                        frete=frete,
+                        vlrTotal=vlr_total,
+                        logradouro=logradouro,
+                        numero=numero,
+                        complemento=complemento,
+                        bairro=bairro,
+                        localidade=localidade,
+                        uf=uf,
+                        cep=cep,
+                        status='separacao'
                     )
 
-                novo_pedido.save()
+                    for item in itens:
+                        ItemPedido.objects.create(
+                            pedido=novo_pedido,
+                            produto_id=item['produto_id'],
+                            quantidade=item['quantidade'],
+                            precoUnitario=item['preco_unitario'],
+                            precoCusto=item['preco_custo'],
+                            is_estoque_externo=item['is_estoque_externo']
+                        )
 
-                return True, 'Pedido cadastrado com sucesso!', novo_pedido.idPedido
+                    return True, 'Pedido cadastrado com sucesso!', novo_pedido.idPedido
 
         except Exception as e:
             return False, str(e), None
 
-    def deletar_pedido(self, pedido_id):
+    def deletar_pedido(self, pedido_id, usuario_id):
         try:
-            # Busca o pedido pelo ID
-            pedido = Pedido.objects.filter(idPedido=pedido_id).first()
-            if not pedido:
-                return False, 'Pedido não encontrado!'
+            with transaction.atomic():
+                pedido = Pedido.objects.filter(idPedido=pedido_id).first()
+                if not pedido:
+                    return False, 'Pedido não encontrado!'
 
-            # Busca todos os itens relacionados ao pedido
-            itens_pedido = ItemPedido.objects.filter(pedido_id=pedido_id)
+                itens_pedido = ItemPedido.objects.filter(pedido_id=pedido_id)
 
-            # Retorna os itens ao estoque
-            for item in itens_pedido:
-                produto_id = item.produto_id
-                quantidade = item.quantidade
+                for item in itens_pedido:
+                    produto_id = item.produto_id
+                    quantidade = item.quantidade
 
-                # Busca o estoque do produto
-                estoque = Estoque.objects.filter(produto_id=produto_id).first()
-                if estoque:
-                    estoque.quantidade += quantidade
-                    estoque.save()
+                    estoque = Estoque.objects.select_for_update().filter(produto_id=produto_id).first()
+                    if estoque:
+                        estoque.quantidade += quantidade
+                        estoque.save()
 
-            # Remove os itens do pedido
-            itens_pedido.delete()
+                    produto = Produto.objects.get(id=produto_id)
+                    MovimentacaoEstoque.objects.create(
+                        produto=produto,
+                        tipo='entrada',
+                        quantidade=quantidade,
+                        data_movimentacao=timezone.now(),
+                        usuario_id=usuario_id
+                    )
 
-            # Remove o pedido
-            pedido.delete()
+                itens_pedido.delete()
+                pedido.delete()
 
-            return True, 'Pedido deletado com sucesso!'
+                return True, 'Pedido deletado com sucesso!'
 
         except Exception as e:
             return False, str(e)

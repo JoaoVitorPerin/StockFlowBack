@@ -58,8 +58,9 @@ class PedidoCadastroView(APIView):
     @method_decorator(group_required('Administrador', 'Operador de Estoque', 'Operador de Pedidos'))
     def delete(self, *args, **kwargs):
         pedido_id = self.request.GET.get('pedido_id')
+        usuario_id = self.request.GET.get('usuario_id')
 
-        status, mensagem = service.pedido.pedido.PedidoSistema().deletar_pedido(pedido_id=pedido_id)
+        status, mensagem = service.pedido.pedido.PedidoSistema().deletar_pedido(pedido_id=pedido_id, usuario_id=usuario_id)
 
         return JsonResponse({"mensagem": mensagem}, status=200)
 
