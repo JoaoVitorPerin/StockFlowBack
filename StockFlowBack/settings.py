@@ -109,6 +109,17 @@ DATABASES = {
     }
 }
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql_psycopg2',
+#         'NAME': 'stockflow',
+#         'USER': 'postgres',
+#         'PASSWORD': 'root',
+#         'HOST': 'localhost',
+#         'PORT': '5432',
+#     }
+# }
+
 # Email
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
