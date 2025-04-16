@@ -96,6 +96,9 @@ class PedidoSistema():
         except Exception as e:
             return False, str(e), []
 
+    from django.db import transaction
+    from django.utils import timezone
+
     def cadastrar_pedido(self, pedido_id=None, data_pedido=None, cliente_id=None, itens=None, desconto=0.0, frete=0.0,
                          usuario_id=None,
                          logradouro=None, numero=None, complemento=None, bairro=None, localidade=None, uf=None,
@@ -103,7 +106,6 @@ class PedidoSistema():
                          cep=None):
         try:
             with transaction.atomic():
-                # Valida e ajusta o estoque para todos os itens
                 for item in itens:
                     produto_id = item['produto_id']
                     quantidade_solicitada = item['quantidade']
@@ -111,21 +113,21 @@ class PedidoSistema():
 
                     if is_estoque_externo:
                         continue
-                    produto = Produto.objects.get(id=produto_id)
+
                     estoque = Estoque.objects.select_for_update().filter(produto_id=produto_id).first()
-                    if not estoque:
-                        raise Exception(f"Produto {produto.nome} não possuí estoque!")
 
-                    if estoque.quantidade < quantidade_solicitada:
-                        raise Exception(
-                            f"Estoque insuficiente para o produto {produto.nome}! Disponível: {estoque.quantidade}, Solicitado: {quantidade_solicitada}")
-
-                    estoque.quantidade -= quantidade_solicitada
-                    estoque.save()
-
+                    if estoque:
+                        estoque.quantidade -= quantidade_solicitada
+                        estoque.save()
+                    else:
+                        # Cria estoque novo com quantidade negativa
+                        Estoque.objects.create(
+                            produto_id=produto_id,
+                            quantidade=-quantidade_solicitada
+                        )
 
                     MovimentacaoEstoque.objects.create(
-                        produto=produto,
+                        produto_id=produto_id,
                         tipo='saida',
                         quantidade=quantidade_solicitada,
                         data_movimentacao=timezone.now(),
@@ -158,15 +160,19 @@ class PedidoSistema():
                             if estoque:
                                 estoque.quantidade += item_antigo.quantidade
                                 estoque.save()
-
-                                produto = Produto.objects.get(id=item_antigo.produto_id)
-                                MovimentacaoEstoque.objects.create(
-                                    produto=produto,
-                                    tipo='entrada',
-                                    quantidade=item_antigo.quantidade,
-                                    data_movimentacao=timezone.now(),
-                                    usuario_id=usuario_id
+                            else:
+                                Estoque.objects.create(
+                                    produto_id=item_antigo.produto_id,
+                                    quantidade=item_antigo.quantidade
                                 )
+
+                            MovimentacaoEstoque.objects.create(
+                                produto_id=item_antigo.produto_id,
+                                tipo='entrada',
+                                quantidade=item_antigo.quantidade,
+                                data_movimentacao=timezone.now(),
+                                usuario_id=usuario_id
+                            )
 
                     itens_antigos.delete()
 
