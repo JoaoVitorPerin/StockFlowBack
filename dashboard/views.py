@@ -36,3 +36,12 @@ class AtletasDashboardView(APIView):
         status, mensagem, atletas = service.dashboard.dashboard.DashboardAtletas().buscar_dados_atletas(anomes=anomes, atleta_id=atleta_id)
 
         return JsonResponse({'status': status, 'mensagem': mensagem, 'atletas': atletas})
+
+class VendasMarcasView(APIView):
+    @method_decorator(group_required('Administrador'))
+    def get(self, *args, **kwargs):
+        anomes = self.request.GET.get('anomes')
+        marca_id = self.request.GET.get('marca_id')
+        status, mensagem, dados_vendas_marcas = service.dashboard.dashboard.DashboardVendasMarca().buscar_dados_vendas_marcas(marca_id=marca_id, anomes=anomes)
+
+        return JsonResponse({'status': status, 'mensagem': mensagem, 'dados_vendas_marcas': dados_vendas_marcas})

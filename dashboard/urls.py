@@ -6,4 +6,5 @@ urlpatterns = [
     re_path(r'^marcas-estoque$', EstoqueMarcas.as_view()),
     re_path(r'^vendas$', VendasDashboardView.as_view()),
     re_path(r'^atletas$', AtletasDashboardView.as_view()),
+    re_path(r'^vendas-marcas$', VendasMarcasView.as_view())
 ]

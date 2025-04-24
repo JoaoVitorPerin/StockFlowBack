@@ -303,4 +303,57 @@ class DashboardAtletas():
         except Exception as e:
             return False, f"Erro ao buscar dados dos atletas: {str(e)}", []
 
+class DashboardVendasMarca():
+    def buscar_dados_vendas_marcas(self, marca_id=None, anomes=None):
+        try:
+            mes = anomes[4:]
+            ano = anomes[:4]
 
+            data_inicio = make_aware(datetime(int(ano), int(mes), 1, 0, 0, 0))
+            if int(mes) == 12:
+                data_fim = make_aware(datetime(int(ano) + 1, 1, 1, 0, 0, 0))
+            else:
+                data_fim = make_aware(datetime(int(ano), int(mes) + 1, 1, 0, 0, 0))
+
+            # Buscar itens dos pedidos no período com marca do produto filtrada
+            itens = ItemPedido.objects.filter(
+                pedido__dataPedido__gte=data_inicio,
+                pedido__dataPedido__lt=data_fim,
+                produto__marca_id=marca_id
+            ).select_related('produto').annotate(
+                nome_produto=F("produto__nome"),
+            ).values(
+                "produto_id",
+                "nome_produto"
+            ).annotate(
+                qtd_produto=Sum("quantidade"),
+                vlr_venda_total=Sum(F("precoUnitario") * F("quantidade")),
+                vlr_custo_total=Sum(F("precoCusto") * F("quantidade")),
+            ).order_by("nome_produto")
+
+            lista_produtos = list(itens)
+
+            # Calcular totais agregados
+            total_venda = sum(p["vlr_venda_total"] for p in lista_produtos)
+            total_custo = sum(p["vlr_custo_total"] for p in lista_produtos)
+            total_qtd = sum(p["qtd_produto"] for p in lista_produtos)
+
+            margem_percentual = round(((total_venda - total_custo) / total_venda) * 100, 2) if total_venda > 0 else 0
+
+            resumo_valores = {
+                "vlr_venda_somado": total_venda,
+                "vlr_custo_somado": total_custo,
+                "qtd_somada": total_qtd,
+                "margem_percentual": margem_percentual
+            }
+
+            retorno = {
+                "resumo_valores": resumo_valores,
+                "lista_produtos": lista_produtos
+            }
+
+            mensagem = f"Resumo e lista de produtos vendidos da marca {marca_id} para {mes}/{ano} retornados com sucesso!"
+            return True, mensagem, retorno
+
+        except Exception as e:
+            return False, f"Erro ao buscar dados de vendas por marca: {str(e)}", []
