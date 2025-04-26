@@ -70,7 +70,6 @@ class DashboardVendas:
             mes = anomes[4:]
             ano = anomes[:4]
 
-            # Definição dos limites de data
             data_inicio = make_aware(datetime(int(ano), int(mes), 1, 0, 0, 0))
             if int(mes) == 12:
                 data_fim = make_aware(datetime(int(ano) + 1, 1, 1, 0, 0, 0))
@@ -107,6 +106,8 @@ class DashboardVendas:
             qtd_pedidos_nao_atleta = 0
             pedidos_com_itens = []
 
+            atletas_com_pedido = set()
+
             for pedido in pedidos:
                 pedido_dict = dict(pedido)
                 pedido_dict["vlr_custo"] = pedido["vlr_custo"] or 0
@@ -127,18 +128,37 @@ class DashboardVendas:
 
                 if pedido["is_atleta"]:
                     total_custo_atleta += pedido_dict["vlr_custo"]
+                    atletas_com_pedido.add(pedido["nm_cliente"])  # salvar nome do atleta com pedido
                 else:
-                    qtd_pedidos_nao_atleta += 1;
+                    qtd_pedidos_nao_atleta += 1
 
-            anomes_date = datetime.strptime(str(anomes) , "%Y%m")
+            # Agora buscar todos os atletas
+            todos_atletas = Cliente.objects.filter(is_atleta=True).values_list('nome_completo', flat=True)
 
-            total_custo_fixo = \
+            atletas_sem_pedido = set(todos_atletas) - atletas_com_pedido
+
+            for nome_atleta in atletas_sem_pedido:
+                pedidos_com_itens.append({
+                    "dataPedido": None,
+                    "idPedido": None,
+                    "nm_cliente": nome_atleta,
+                    "is_atleta": True,
+                    "vlr_frete": 0,
+                    "vlr_custo": 0,
+                    "vlr_total": 0,
+                    "vlr_lucro": 0,
+                    "vlr_margem": 0,
+                })
+
+            anomes_date = datetime.strptime(str(anomes), "%Y%m")
+
+            total_custo_fixo = (
                 CustoMensal.objects.filter(
                     Q(recorrente=True) |
                     Q(dat_ini__year__lte=anomes_date.year, dat_ini__month__lte=anomes_date.month) &
                     (Q(dat_fim__year__gte=anomes_date.year, dat_fim__month__gte=anomes_date.month) | Q(dat_fim__isnull=True))
-                ).aggregate(total=Sum("valor"))[
-                "total"] or 0
+                ).aggregate(total=Sum("valor"))["total"] or 0
+            )
             total_lucro -= total_custo_fixo
 
             dados_cards = {
