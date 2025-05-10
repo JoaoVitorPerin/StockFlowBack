@@ -48,11 +48,11 @@ class ProdutoSistema():
                         ultima_movimentacao_usuario_sobrenome=Coalesce(ultima_movimentacao_usuario_sobrenome,
                                                                        models.Value(None))
                     ).values(
-                        'id', 'nome', 'descricao', 'preco_compra', 'preco_venda',
+                        'id', 'nome', 'descricao', 'preco_compra', 'preco_venda', 'marca__id',
                         'marca__nome', 'categoria__id', 'categoria__nome', 'estoque__quantidade', 'status', 'preco_compra_real',
                         'ultima_movimentacao_tipo', 'ultima_movimentacao_quantidade', 'ultima_movimentacao_data',
                         'ultima_movimentacao_usuario_nome', 'ultima_movimentacao_usuario_sobrenome'
-                    ).order_by("status").reverse()
+                    ).order_by('status', '-id').reverse()
                 )
 
             return True, 'Produtos retornados com sucesso', lista_produto
