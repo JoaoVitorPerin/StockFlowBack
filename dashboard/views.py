@@ -5,7 +5,7 @@ from StockFlowBack.decorators import group_required
 from django.utils.decorators import method_decorator
 
 class EstoqueDashboardView(APIView):
-    @method_decorator(group_required('Administrador'))
+    @method_decorator(group_required('Administrador', 'Vendedor'))
     def get(self, *args, **kwargs):
         marca_id = self.request.GET.get('marca_id')
         categoria_id= self.request.GET.get('categoria_id')
@@ -14,11 +14,18 @@ class EstoqueDashboardView(APIView):
         return JsonResponse({'status': status, 'mensagem': mensagem, 'estoque': estoque})
 
 class EstoqueMarcas(APIView):
-    @method_decorator(group_required('Administrador'))
+    @method_decorator(group_required('Administrador', 'Vendedor'))
     def get(self, *args, **kwargs):
         status, mensagem, marcas = service.dashboard.dashboard.DashboardEstoque().buscar_dados_por_marcas()
 
         return JsonResponse({'status': status, 'mensagem': mensagem, 'marcas': marcas})
+
+class EstoqueCoeficienteCompra(APIView):
+    @method_decorator(group_required('Administrador', 'Vendedor'))
+    def get(self, *args, **kwargs):
+        status, mensagem, lista_produtos = service.dashboard.dashboard.DashboardEstoque().buscar_dados_estoque_coeficiente_compra_produto()
+
+        return JsonResponse({'status': status, 'mensagem': mensagem, 'lista_produtos': lista_produtos})
 
 class VendasDashboardView(APIView):
     @method_decorator(group_required('Administrador'))

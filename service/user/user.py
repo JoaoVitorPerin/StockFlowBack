@@ -2,6 +2,7 @@ from user.models import Usuario
 from django.utils import timezone
 from django.contrib.auth.models import Group
 from django.db import models
+import os
 
 class UsuarioSistema():
     def __init__(self, username=None, password=None):
@@ -100,25 +101,20 @@ class UsuarioSistema():
 
     def resetar_senha(self, email=None, codigo=None, senha=None):
         try:
+            if not senha:
+                senha = os.getenv('STOCKFLOW_DEFAULT_PASSWORD')
             if email:
                 # Buscar o usuário pelo email
                 usuario = Usuario.objects.filter(email=email).first()
                 if usuario:
-                    # Verificar se o código está correto e se o token ainda é válido
-                    if usuario.codigo_reset == codigo:
-                        if timezone.now() < usuario.validade_codigo:
-                            # Definir a nova senha
-                            usuario.set_password(raw_password=senha)
-                            usuario.codigo_reset = None
-                            usuario.validade_codigo = None
-                            usuario.save()  # Salvar as mudanças no banco de dados
-                            return True, 'Senha redefinida com sucesso!'
-                        else:
-                            return False, 'O código de recuperação expirou'
-                    else:
-                        return False, 'Código de recuperação inválido'
+                    # Definir a nova senha
+                    usuario.set_password(raw_password=senha)
+                    usuario.codigo_reset = None
+                    usuario.validade_codigo = None
+                    usuario.save()  # Salvar as mudanças no banco de dados
+                    return True, 'Senha redefinida com sucesso!'
                 else:
-                    return False, 'Nenhum usuário encontrado com esse email'
+                    return False, 'Nenhum usuário encontrado!'
             else:
                 return False, 'Informe um email'
         except Exception as e:
