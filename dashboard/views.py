@@ -20,6 +20,13 @@ class EstoqueMarcas(APIView):
 
         return JsonResponse({'status': status, 'mensagem': mensagem, 'marcas': marcas})
 
+class EstoqueCoeficienteCompra(APIView):
+    @method_decorator(group_required('Administrador'))
+    def get(self, *args, **kwargs):
+        status, mensagem, lista_produtos = service.dashboard.dashboard.DashboardEstoque().buscar_dados_estoque_coeficiente_compra_produto()
+
+        return JsonResponse({'status': status, 'mensagem': mensagem, 'lista_produtos': lista_produtos})
+
 class VendasDashboardView(APIView):
     @method_decorator(group_required('Administrador'))
     def get(self, *args, **kwargs):

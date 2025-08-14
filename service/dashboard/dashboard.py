@@ -7,6 +7,9 @@ from datetime import datetime
 from pedido.models import Pedido, ItemPedido
 from cliente.models import Cliente
 from custo_mensal.models import CustoMensal
+from django.db.models.functions import Coalesce
+from dateutil.relativedelta import relativedelta
+import math
 
 class DashboardEstoque():
     def buscar_dados_estoque_geral(self, marca_id=None, categoria_id=None):
@@ -62,6 +65,77 @@ class DashboardEstoque():
         except Exception as e:
             return False, str(e), []
 
+    def buscar_dados_estoque_coeficiente_compra_produto(self):
+        try:
+            hoje = datetime.today()
+
+            inicio_mes_atual = datetime(hoje.year, hoje.month, 1)
+            data_inicio_3_meses = make_aware(inicio_mes_atual - relativedelta(months=3))
+            data_fim_3_meses = make_aware(inicio_mes_atual)
+
+            # ------------------------------
+            # 1. Consulta de vendas dos últimos 3 meses por produto
+            # ------------------------------
+            media_vendas_produtos = list(ItemPedido.objects.filter(
+                pedido__dataPedido__gte=data_inicio_3_meses,
+                pedido__dataPedido__lt=data_fim_3_meses
+            ).values(
+                id=F("produto_id"),
+                nome_produto=F("produto_id__nome"),
+                marca=F("produto_id__marca__nome")
+            ).annotate(
+                total_vendido_ultimos_3_meses=Coalesce(Sum("quantidade"), 0),
+            ).annotate(
+                media_mensal=F("total_vendido_ultimos_3_meses") / 3.0
+            ).order_by("-media_mensal"))
+
+            # ------------------------------
+            # 2. Consulta de estoque atual por produto
+            # ------------------------------
+            estoque_por_produto = {
+                item["produto_id"]: item
+                for item in Estoque.objects.values(
+                    "produto_id",
+                    "quantidade",
+                )
+            }
+
+            # ------------------------------
+            # 3. Mesclar as duas listas com base no produto_id
+            # ------------------------------
+            produtos_com_estoque = []
+
+            for produto in media_vendas_produtos:
+                produto_id = produto["id"]
+                estoque = estoque_por_produto.get(produto_id, {})
+
+                produto["quantidade_estoque"] = estoque.get("quantidade", 0)
+
+                # 💡 Cálculo do coeficiente de estoque
+                if produto["media_mensal"] > 0 and produto["quantidade_estoque"] > 0:
+                    produto["coef_estoque"] = round(produto["quantidade_estoque"] / produto["media_mensal"], 2)
+                else:
+                    produto["coef_estoque"] = 0
+
+                media = float(produto.get("media_mensal") or 0)
+                estoque = float(produto.get("quantidade_estoque") or 0)
+
+                # Previsão base
+                if estoque >= 0:
+                    previsao = (media * 1.75) - estoque
+                else:
+                    previsao = (media * 1.75) + abs(estoque)
+
+                # Arredondar para cima se for maior que 0
+                produto["previsao_compra"] = math.ceil(previsao) if previsao > 0 else 0
+
+                produtos_com_estoque.append(produto)
+
+            produtos_com_estoque.sort(key=lambda item: item["coef_estoque"])
+            return True, 'Produtos com média de venda e estoque retornados com sucesso!', produtos_com_estoque
+
+        except Exception as e:
+            return False, f"Erro ao buscar dados: {str(e)}", []
 
 class DashboardVendas:
     @staticmethod
