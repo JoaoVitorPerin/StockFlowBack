@@ -86,6 +86,18 @@ class ResetSenhaUser(APIView):
 
         return JsonResponse({'status': status, 'mensagem': mensagem})
 
+class ResetPasswordUser(APIView):
+    def get_permissions(self):
+        permission_classes = [IsAuthenticated]
+        return [permission() for permission in permission_classes]
+    def post(self, *args, **kwargs):
+        senha = self.request.data.get('password')
+        email = self.request.data.get('email')
+
+        status, mensagem = service.user.user.UsuarioSistema().resetar_senha(senha=senha, email=email)
+
+        return JsonResponse({'status': status, 'mensagem': mensagem})
+
 class GruposSistemaView(APIView):
     @method_decorator(group_required('Administrador'))
     def get(self, *args, **kwargs):
